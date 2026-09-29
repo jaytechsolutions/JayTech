@@ -1,0 +1,160 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profiles and roles",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "user"] },
+        "status": { "type": "string", "enum": ["pending", "approved", "active"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "role"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Service orders from clients",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userPhone": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "serviceId": { "type": "string" },
+        "serviceTitle": { "type": "string" },
+        "details": { "type": "string" },
+        "amount": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "paid", "approved", "cancelled"] },
+        "paymentMethod": { "type": "string" },
+        "paymentReference": { "type": "string" },
+        "paymentPhone": { "type": "string" },
+        "receiverPhone": { "type": "string" },
+        "receiverName": { "type": "string" },
+        "paidAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "serviceId", "amount", "status"]
+    },
+    "Enrollment": {
+      "title": "Enrollment",
+      "description": "Student course enrollments",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "courseId": { "type": "string" },
+        "courseTitle": { "type": "string" },
+        "amount": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "paid", "approved", "cancelled"] },
+        "paymentMethod": { "type": "string" },
+        "paymentReference": { "type": "string" },
+        "paymentPhone": { "type": "string" },
+        "receiverPhone": { "type": "string" },
+        "receiverName": { "type": "string" },
+        "paidAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "courseId", "status"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "User reviews for services or courses",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "content": { "type": "string" },
+        "rating": { "type": "number", "minimum": 1, "maximum": 5 },
+        "approved": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "content", "rating"]
+    },
+    "Video": {
+      "title": "Video",
+      "description": "Training videos for courses",
+      "type": "object",
+      "properties": {
+        "courseId": { "type": "string" },
+        "title": { "type": "string" },
+        "videoUrl": { "type": "string", "format": "uri" },
+        "description": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["courseId", "title", "videoUrl"]
+    },
+    "progress": {
+      "title": "Progress",
+      "description": "User progress through course videos",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "courseId": { "type": "string" },
+        "videoId": { "type": "string" },
+        "completed": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "courseId", "videoId", "completed"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "User notifications for approvals, updates, and events",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string" },
+        "courseId": { "type": "string" },
+        "courseTitle": { "type": "string" },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "message"]
+    },
+    "TestConnection": {
+      "title": "TestConnection",
+      "description": "Connection test document for health checks",
+      "type": "object",
+      "properties": {
+        "status": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "test/{docId}": {
+      "schema": "TestConnection",
+      "description": "Firestore connection health check"
+    },
+    "users/{userId}": {
+      "schema": "User",
+      "description": "User profile documents"
+    },
+    "orders/{orderId}": {
+      "schema": "Order",
+      "description": "Service order documents"
+    },
+    "enrollments/{enrollmentId}": {
+      "schema": "Enrollment",
+      "description": "Course enrollment documents"
+    },
+    "notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "Notification documents"
+    },
+    "reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "User review documents"
+    },
+    "videos/{videoId}": {
+      "schema": "Video",
+      "description": "Course video documents"
+    },
+    "progress/{progressId}": {
+      "schema": "progress",
+      "description": "Course progress tracking"
+    }
+  }
+}

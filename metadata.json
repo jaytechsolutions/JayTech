@@ -1,0 +1,8 @@
+{
+  "name": "Remix JayTech Solutions",
+  "description": "Professional software development, training, and technology solutions including web, mobile, and data management services.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
