@@ -5,12 +5,11 @@ import firebaseConfig from '../../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
 
-// Use initializeFirestore with long polling enabled to prevent WebChannelConnection Listen stream transport errors in proxies/Cloud Run
+// Use initializeFirestore with auto-detect long polling to prevent WebChannelConnection Listen stream transport errors in proxies/Cloud Run
 export const db = initializeFirestore(
   app,
   {
     experimentalAutoDetectLongPolling: true,
-    experimentalForceLongPolling: true,
   },
   firebaseConfig.firestoreDatabaseId
 );

@@ -11,6 +11,7 @@ import { useCurrency } from '../contexts/CurrencyContext';
 
 import SuccessOverlay from '../components/SuccessOverlay';
 import ServiceCard from '../components/ServiceCard';
+import FAQSection from '../components/FAQSection';
 
 import webDevImg from '../assets/images/web_dev_service_1790442249672.jpg';
 import webAppImg from '../assets/images/web_app_service_1790442260815.jpg';
@@ -396,6 +397,9 @@ export default function Services() {
         title="Order Submitted Successfully!"
         message="Your service order has been sent to the JayTech Solutions admin dashboard. The administrator will review and acknowledge your request promptly."
       />
+
+      {/* Interactive FAQ Section to answer software development and quote inquiries */}
+      <FAQSection />
     </div>
   );
 }

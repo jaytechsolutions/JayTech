@@ -44,19 +44,24 @@ export default function Footer() {
             <h3 className="text-lg font-semibold text-white mb-4">Quick Links</h3>
             <ul className="space-y-2">
               <li><Link to="/services" className="hover:text-blue-400 transition-colors">Services</Link></li>
-              <li><Link to="/training" className="hover:text-blue-400 transition-colors">Course</Link></li>
-              <li><Link to="/services" className="hover:text-blue-400 transition-colors">Web Development</Link></li>
-              <li><Link to="/services" className="hover:text-blue-400 transition-colors">Mobile Apps</Link></li>
+              <li><Link to="/training" className="hover:text-blue-400 transition-colors">Course & Training</Link></li>
+              <li><Link to="/contact" className="hover:text-blue-400 transition-colors">Contact Support</Link></li>
+              <li><a href="#faq" className="hover:text-blue-400 transition-colors">Frequently Asked Questions</a></li>
             </ul>
           </div>
 
           {/* Contact */}
           <div>
             <h3 className="text-lg font-semibold text-white mb-4">Contact Us</h3>
-            <ul className="space-y-2">
+            <ul className="space-y-2.5">
               <li className="flex items-center space-x-2">
-                <Mail className="w-4 h-4" />
-                <a href="mailto:jaytechsolutions.net@gmail.com" className="hover:text-blue-400">jaytechsolutions.net@gmail.com</a>
+                <Mail className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                <a href="mailto:jaytechsolutions.net@gmail.com" className="hover:text-blue-400 truncate">jaytechsolutions.net@gmail.com</a>
+              </li>
+              <li>
+                <Link to="/contact" className="inline-block mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-md">
+                  Open Support Inquiry Form
+                </Link>
               </li>
             </ul>
           </div>

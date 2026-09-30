@@ -102,6 +102,7 @@ export default function Navbar() {
     { name: 'Home', path: '/' },
     { name: 'Services', path: '/services' },
     { name: 'Course', path: '/training' },
+    { name: 'Contact', path: '/contact' },
   ];
 
   if (user) {

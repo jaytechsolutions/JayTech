@@ -10,6 +10,7 @@ import Services from './pages/Services';
 import Training from './pages/Training';
 import Auth from './pages/Auth';
 import Dashboard from './pages/Dashboard';
+import Contact from './pages/Contact';
 import { CurrencyProvider } from './contexts/CurrencyContext';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -39,6 +40,7 @@ export default function App() {
               <Route path="/training" element={<Training />} />
               <Route path="/course" element={<Training />} />
               <Route path="/courses" element={<Training />} />
+              <Route path="/contact" element={<Contact />} />
               <Route path="/auth" element={<Auth />} />
               <Route 
                 path="/dashboard" 

@@ -13,6 +13,7 @@ import { useCurrency } from '../contexts/CurrencyContext';
 
 import SuccessOverlay from '../components/SuccessOverlay';
 import PaystackPaymentModal from '../components/PaystackPaymentModal';
+import FAQSection from '../components/FAQSection';
 import { courses } from '../data/courses';
 
 export default function Training() {
@@ -391,6 +392,9 @@ export default function Training() {
         title="Payment & Enrollment Confirmed!"
         message={`Payment confirmed via Paystack. You are now officially enrolled in ${successCourseTitle || 'your selected courses'}. Redirecting to your learning dashboard...`}
       />
+
+      {/* Interactive FAQ Section to answer common training and payment questions */}
+      <FAQSection />
     </div>
   );
 }

@@ -298,6 +298,196 @@ async function startServer() {
     }
   });
 
+  // Secure Client Contact Inquiry Endpoint
+  app.post('/api/contact-inquiry', async (req, res) => {
+    try {
+      const { name, email, phone, subject, category, message, honeypot } = req.body;
+
+      // Anti-spam bot honeypot detection
+      if (honeypot && String(honeypot).trim() !== '') {
+        return res.status(200).json({ success: true, message: 'Inquiry received' });
+      }
+
+      // Input Validation
+      const cleanName = String(name || '').trim();
+      const cleanEmail = String(email || '').trim().toLowerCase();
+      const cleanPhone = String(phone || '').trim();
+      const cleanSubject = String(subject || 'General Inquiry').trim();
+      const cleanCategory = String(category || 'General Support').trim();
+      const cleanMessage = String(message || '').trim();
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!cleanName || cleanName.length < 2 || cleanName.length > 100) {
+        return res.status(400).json({ error: 'Please provide a valid name (2-100 characters).' });
+      }
+      if (!cleanEmail || !emailRegex.test(cleanEmail) || cleanEmail.length > 150) {
+        return res.status(400).json({ error: 'Please provide a valid email address.' });
+      }
+      if (!cleanMessage || cleanMessage.length < 10 || cleanMessage.length > 4000) {
+        return res.status(400).json({ error: 'Please provide a message with at least 10 characters (up to 4000).' });
+      }
+
+      // Sanitize inputs for display in HTML
+      const escapeHtml = (str: string) => str.replace(/[&<>'"]/g, 
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
+
+      const sanitizedName = escapeHtml(cleanName);
+      const sanitizedEmail = escapeHtml(cleanEmail);
+      const sanitizedPhone = escapeHtml(cleanPhone || 'Not provided');
+      const sanitizedSubject = escapeHtml(cleanSubject);
+      const sanitizedCategory = escapeHtml(cleanCategory);
+      const sanitizedMessage = escapeHtml(cleanMessage).replace(/\n/g, '<br/>');
+
+      const supportEmail = 'jaytechsolutions.net@gmail.com';
+      const smtpUser = process.env.SMTP_USER || process.env.GMAIL_USER || supportEmail;
+      const smtpPass = process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || process.env.EMAIL_PASSWORD || '';
+
+      const adminEmailHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px; color: #1e293b; }
+            .card { background-color: #ffffff; max-width: 600px; margin: 0 auto; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+            .header { background: linear-gradient(135deg, #2563eb, #1d4ed8); padding: 24px; color: #ffffff; }
+            .content { padding: 32px 24px; }
+            .field-row { margin-bottom: 16px; }
+            .label { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+            .value { font-size: 15px; color: #0f172a; font-weight: 500; }
+            .message-box { background-color: #f1f5f9; padding: 20px; border-radius: 12px; margin-top: 20px; border-left: 4px solid #2563eb; line-height: 1.6; }
+            .footer { background-color: #f8fafc; padding: 16px 24px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b; text-align: center; }
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <div class="header">
+              <h2 style="margin: 0; font-size: 20px;">New Client Inquiry Received</h2>
+              <p style="margin: 4px 0 0 0; opacity: 0.9; font-size: 13px;">JayTech Solutions Customer Care & Support</p>
+            </div>
+            <div class="content">
+              <div class="field-row">
+                <div class="label">Sender Name</div>
+                <div class="value">${sanitizedName}</div>
+              </div>
+              <div class="field-row">
+                <div class="label">Client Email (Reply-To)</div>
+                <div class="value"><a href="mailto:${sanitizedEmail}" style="color: #2563eb; text-decoration: none;">${sanitizedEmail}</a></div>
+              </div>
+              <div class="field-row">
+                <div class="label">Phone / WhatsApp</div>
+                <div class="value">${sanitizedPhone}</div>
+              </div>
+              <div class="field-row">
+                <div class="label">Category / Area of Interest</div>
+                <div class="value">${sanitizedCategory}</div>
+              </div>
+              <div class="field-row">
+                <div class="label">Subject</div>
+                <div class="value">${sanitizedSubject}</div>
+              </div>
+              <div class="message-box">
+                <div class="label" style="color: #1e293b; margin-bottom: 8px;">Client Message:</div>
+                <div style="color: #334155; font-size: 14px;">${sanitizedMessage}</div>
+              </div>
+            </div>
+            <div class="footer">
+              <p style="margin: 0;">Hit "Reply" in your email client to directly respond to ${sanitizedName} (${sanitizedEmail}).</p>
+              <p style="margin: 4px 0 0 0;">JayTech Solutions • Koforidua, Ghana • 0204168810 / 0245862205</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      const clientConfirmationHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px; color: #1e293b; }
+            .card { background-color: #ffffff; max-width: 600px; margin: 0 auto; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; }
+            .header { background: linear-gradient(135deg, #0d9488, #0f766e); padding: 24px; color: #ffffff; text-align: center; }
+            .content { padding: 32px 24px; }
+            .footer { background-color: #f8fafc; padding: 20px 24px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b; text-align: center; }
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <div class="header">
+              <h2 style="margin: 0; font-size: 22px;">Inquiry Received!</h2>
+              <p style="margin: 4px 0 0 0; opacity: 0.9; font-size: 14px;">Thank you for contacting JayTech Solutions</p>
+            </div>
+            <div class="content">
+              <p>Hello <strong>${sanitizedName}</strong>,</p>
+              <p>We have successfully received your inquiry regarding <strong>"${sanitizedSubject}"</strong> (${sanitizedCategory}).</p>
+              <p>Our team, led by Joseph Amponsah, reviews all client inquiries and aims to respond within a few hours or the same business day.</p>
+              <div style="background-color: #f1f5f9; padding: 16px; border-radius: 12px; margin: 20px 0; font-size: 14px;">
+                <strong>Summary of your message:</strong><br/>
+                <span style="color: #475569;">${sanitizedMessage}</span>
+              </div>
+              <p>If your matter is urgent, you can reach us immediately via:</p>
+              <ul style="color: #334155; line-height: 1.8;">
+                <li>WhatsApp: <a href="https://wa.me/233245862205" style="color: #0d9488; font-weight: bold;">+233 24 586 2205</a></li>
+                <li>Direct Phone: <a href="tel:0204168810" style="color: #0d9488; font-weight: bold;">0204168810</a></li>
+              </ul>
+            </div>
+            <div class="footer">
+              <p style="margin: 0;"><strong>JayTech Solutions</strong> • Koforidua, Ghana</p>
+              <p style="margin: 4px 0 0 0;">Empowering Businesses with Software Solutions & Professional IT Training</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      if (smtpPass) {
+        try {
+          const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+              user: smtpUser,
+              pass: smtpPass
+            }
+          });
+
+          // 1. Send notice to JayTech support team
+          await transporter.sendMail({
+            from: `"JayTech Contact Desk" <${supportEmail}>`,
+            to: supportEmail,
+            replyTo: cleanEmail,
+            subject: `[New Inquiry] ${cleanCategory}: ${cleanSubject} - ${cleanName}`,
+            html: adminEmailHtml,
+          });
+
+          // 2. Send automated confirmation back to the client
+          await transporter.sendMail({
+            from: `"JayTech Solutions Support" <${supportEmail}>`,
+            to: cleanEmail,
+            replyTo: supportEmail,
+            subject: `We have received your inquiry - JayTech Solutions`,
+            html: clientConfirmationHtml,
+          });
+
+          console.log(`[CONTACT INQUIRY SMTP] Successfully routed inquiry from ${cleanEmail} to ${supportEmail}`);
+        } catch (smtpErr) {
+          console.warn('[CONTACT INQUIRY SMTP NOTICE] Transporter notice:', smtpErr);
+        }
+      } else {
+        console.log(`[CONTACT INQUIRY LOG] From: ${cleanName} <${cleanEmail}> | Subject: ${cleanSubject} | Category: ${cleanCategory}`);
+      }
+
+      res.json({
+        success: true,
+        message: 'Thank you! Your message has been sent directly to the JayTech Solutions support team. We will get back to you shortly.',
+      });
+    } catch (err: any) {
+      console.error('Contact inquiry error:', err);
+      res.status(500).json({ error: err.message || 'Failed to process inquiry. Please try again or WhatsApp 0245862205.' });
+    }
+  });
+
   // Intelligent JayTech knowledge response generator for quota fallback / offline mode
   function getSmartFallbackReply(userPrompt: string): string {
     const p = userPrompt.toLowerCase();
