@@ -74,20 +74,20 @@ export default function Navbar() {
             </div>
           </Link>
 
-          {/* Navigation Links - Scrollable/Visible on all screens */}
-          <div className="flex flex-1 justify-center px-2 sm:px-6">
-            <div className="flex items-center space-x-4 sm:space-x-6 lg:space-x-8 overflow-x-auto scrollbar-hide max-w-full py-2">
+          {/* Navigation Links - Static on desktop, listed in toggleable menu on mobile */}
+          <div className="hidden lg:flex flex-1 justify-center px-6">
+            <div className="flex items-center space-x-8">
               {navLinks.map((link) => (
                 <Link
                   key={link.path}
                   to={link.path}
                   className={cn(
-                    "text-[10px] sm:text-[12px] font-black uppercase tracking-wider transition-all flex items-center gap-1 hover:text-primary shrink-0",
+                    "text-[12px] font-black uppercase tracking-wider transition-all flex items-center gap-1 hover:text-primary shrink-0",
                     location.pathname === link.path ? "text-primary border-b-2 border-primary" : "text-white"
                   )}
                 >
                   {link.name}
-                  {link.hasDropdown && <ChevronDown className="w-2.5 h-2.5 sm:w-3 sm:h-3" />}
+                  {link.hasDropdown && <ChevronDown className="w-3 h-3" />}
                 </Link>
               ))}
             </div>
