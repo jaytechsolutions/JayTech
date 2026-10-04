@@ -25,29 +25,33 @@
   }
   
   h1, h2, h3, h4, h5, h6 {
-    @apply font-bold tracking-tight text-slate-900;
+    @apply font-bold tracking-tight text-slate-900 leading-tight;
   }
 
+  h1 { @apply text-2xl sm:text-4xl md:text-5xl lg:text-6xl; }
+  h2 { @apply text-xl sm:text-2xl md:text-3xl lg:text-4xl; }
+  h3 { @apply text-lg sm:text-xl md:text-2xl; }
+
   p {
-    @apply leading-relaxed text-slate-600 font-medium;
+    @apply leading-relaxed text-slate-600 font-medium text-xs sm:text-sm md:text-base;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-md text-sm font-bold transition-all flex items-center gap-2 shadow-md hover:shadow-lg active:scale-95;
+    @apply bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-md text-[11px] sm:text-sm font-bold transition-all flex items-center gap-2 shadow-md hover:shadow-lg active:scale-95;
   }
   
   .btn-outline {
-    @apply border-2 border-white/30 hover:border-white text-white px-6 py-3 rounded-md text-sm font-bold transition-all flex items-center gap-2 active:scale-95;
+    @apply border-2 border-white/30 hover:border-white text-white px-5 py-2.5 rounded-md text-[11px] sm:text-sm font-bold transition-all flex items-center gap-2 active:scale-95;
   }
 
   .section-title {
-    @apply text-primary font-bold text-xs uppercase tracking-widest mb-3 block;
+    @apply text-primary font-bold text-[10px] sm:text-xs uppercase tracking-widest mb-2 block;
   }
 
   .section-headline {
-    @apply text-3xl md:text-4xl font-bold text-slate-900 mb-6;
+    @apply text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 mb-4;
   }
 }
 
@@ -58,4 +62,12 @@
 
 .animate-fade-in {
   animation: fadeIn 0.6s ease-out forwards;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
