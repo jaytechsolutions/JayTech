@@ -64,7 +64,7 @@ export default function Navbar() {
                 className="w-full h-full object-cover"
               />
             </div>
-            <div className="flex flex-col">
+            <div className="flex flex-col max-[340px]:hidden">
               <span className="text-lg font-bold text-white tracking-tight leading-none">
                 Kobbi <span className="text-primary">Labs</span>
               </span>

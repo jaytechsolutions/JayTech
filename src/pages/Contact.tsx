@@ -5,18 +5,18 @@ import FAQSection from '../components/FAQSection';
 
 export default function Contact() {
   return (
-    <div className="pt-32 sm:pt-40 pb-16 bg-gradient-to-b from-gray-50 via-white to-gray-50 min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="pt-28 sm:pt-40 pb-16 bg-gradient-to-b from-gray-50 via-white to-gray-50 min-h-screen">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 bg-blue-50 text-primary rounded-full text-[10px] font-black uppercase tracking-wider mb-4 border border-blue-100 shadow-sm">
+        <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-16">
+          <div className="inline-flex items-center space-x-2 px-3 py-1 bg-blue-50 text-primary rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider mb-3 sm:mb-4 border border-blue-100 shadow-sm">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Kobbi Labs Support</span>
           </div>
-          <h1 className="text-3xl sm:text-5xl font-black text-slate-950 tracking-tight">
+          <h1 className="text-2xl sm:text-5xl font-black text-slate-950 tracking-tight">
             Get in Touch With Our Team
           </h1>
-          <p className="mt-4 text-lg text-slate-900 font-bold leading-relaxed">
+          <p className="mt-3 sm:mt-4 text-sm sm:text-lg text-slate-900 font-bold leading-relaxed">
             Have questions about custom software, web and mobile apps, or enrolling in our training? We are here to help you take the next step.
           </p>
         </div>

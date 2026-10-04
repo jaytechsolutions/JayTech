@@ -37,6 +37,21 @@
   }
 }
 
+/* Optimizations for extremely small viewports (3 inch screens ~240-320px) */
+@media (max-width: 320px) {
+  :root {
+    font-size: 14px;
+  }
+  .max-w-7xl {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+  h1 { font-size: 1.5rem !important; }
+  h2 { font-size: 1.25rem !important; }
+  h3 { font-size: 1.1rem !important; }
+  .section-headline { font-size: 1.25rem !important; }
+}
+
 @layer components {
   .btn-primary {
     @apply bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-md text-[11px] sm:text-sm font-bold transition-all flex items-center gap-2 shadow-md hover:shadow-lg active:scale-95;

@@ -151,13 +151,13 @@ export default function Services() {
   };
 
   return (
-    <div className="min-h-screen pt-32 sm:pt-40 pb-16 bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
+    <div className="min-h-screen pt-28 sm:pt-40 pb-16 bg-gray-50">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="text-center mb-12 sm:mb-16">
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-3xl min-[400px]:text-4xl sm:text-5xl font-black text-slate-950 mb-4 tracking-tight leading-tight break-words"
+            className="text-2xl min-[400px]:text-4xl sm:text-5xl font-black text-slate-950 mb-3 tracking-tight leading-tight break-words"
           >
             Professional <span className="text-primary">Software Solutions</span>
           </motion.h1>
@@ -165,7 +165,7 @@ export default function Services() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-base sm:text-xl text-slate-900 font-bold max-w-2xl mx-auto leading-relaxed"
+            className="text-xs sm:text-xl text-slate-900 font-bold max-w-2xl mx-auto leading-relaxed"
           >
             Choose from our range of expert software services. Submit your project requirements directly to our admin team for review and fast confirmation.
           </motion.p>
@@ -173,16 +173,16 @@ export default function Services() {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="mt-8 flex justify-center"
+            className="mt-6 sm:mt-8 flex justify-center"
           >
             <button
               onClick={() => {
                 setFormError(null);
                 setSelectedService(services[0]);
               }}
-              className="px-8 py-5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black text-sm rounded-2xl shadow-lg shadow-blue-600/25 hover:shadow-blue-600/40 hover:scale-105 active:scale-95 transition-all flex items-center space-x-2 cursor-pointer w-full sm:w-auto justify-center"
+              className="px-6 py-4 sm:px-8 sm:py-5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black text-xs sm:text-sm rounded-2xl shadow-lg shadow-blue-600/25 hover:shadow-blue-600/40 hover:scale-105 active:scale-95 transition-all flex items-center space-x-2 cursor-pointer w-full sm:w-auto justify-center"
             >
-              <Send className="w-4 h-4" />
+              <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>Request a Custom Quote</span>
             </button>
           </motion.div>

@@ -60,15 +60,15 @@ export default function Training() {
   };
 
   return (
-    <div className="min-h-screen pt-28 md:pt-40 pb-16 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen pt-24 sm:pt-40 pb-16 bg-white">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         
-        <div className="flex flex-col md:flex-row md:items-center justify-between my-8 md:my-16 gap-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between my-8 md:my-16 gap-6 sm:gap-8">
           <div className="max-w-2xl">
             <motion.h1 
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="text-3xl min-[400px]:text-4xl sm:text-5xl font-black text-slate-950 mb-4 md:mb-6 tracking-tight leading-tight break-words"
+              className="text-2xl min-[400px]:text-4xl sm:text-5xl font-black text-slate-950 mb-3 sm:mb-6 tracking-tight leading-tight break-words"
             >
               Interactive <span className="text-primary italic">Online Classes</span>
             </motion.h1>
@@ -76,19 +76,19 @@ export default function Training() {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.1 }}
-              className="text-base sm:text-xl text-slate-900 font-bold leading-relaxed"
+              className="text-sm sm:text-xl text-slate-900 font-bold leading-relaxed"
             >
               Master in-demand tech skills through our live online classes. Register now to receive your unique Course Code and join our WhatsApp learning community for instructor guidance and professional certification.
             </motion.p>
           </div>
 
-          <div className="bg-blue-50 border border-blue-100 p-6 md:p-8 rounded-[32px] flex items-center space-x-4 shadow-sm">
-            <div className="bg-blue-600 p-4 rounded-2xl text-white shadow-lg shadow-blue-600/20">
-              <Users className="w-8 h-8" />
+          <div className="bg-blue-50 border border-blue-100 p-5 sm:p-8 rounded-[24px] sm:rounded-[32px] flex items-center space-x-3 sm:space-x-4 shadow-sm">
+            <div className="bg-blue-600 p-3 sm:p-4 rounded-xl sm:rounded-2xl text-white shadow-lg shadow-blue-600/20">
+              <Users className="w-6 h-6 sm:w-8 sm:h-8" />
             </div>
             <div>
-              <h4 className="text-slate-950 font-black text-xl leading-none mb-1 uppercase tracking-tighter">Interactive Classes</h4>
-              <p className="text-blue-700 font-black text-[10px] uppercase tracking-widest">WhatsApp Learning • Live Sessions</p>
+              <h4 className="text-slate-950 font-black text-lg sm:text-xl leading-none mb-1 uppercase tracking-tighter">Interactive Classes</h4>
+              <p className="text-blue-700 font-black text-[8px] sm:text-[10px] uppercase tracking-widest">WhatsApp Learning • Live Sessions</p>
             </div>
           </div>
         </div>

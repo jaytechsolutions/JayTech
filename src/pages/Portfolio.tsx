@@ -58,10 +58,10 @@ const projects = [
 
 export default function Portfolio() {
   return (
-    <div className="pt-32 pb-24 bg-white min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="pt-28 pb-24 bg-white min-h-screen">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mb-16 md:mb-20 text-center max-w-3xl mx-auto">
+        <div className="mb-12 md:mb-20 text-center max-w-3xl mx-auto">
           <motion.span 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -73,7 +73,7 @@ export default function Portfolio() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-3xl min-[400px]:text-4xl sm:text-5xl font-black text-slate-950 tracking-tight mt-4 leading-tight break-words"
+            className="text-2xl min-[400px]:text-4xl sm:text-5xl font-black text-slate-950 tracking-tight mt-3 leading-tight break-words"
           >
             Delivering Excellence <br />
             Through <span className="text-primary">Innovative Code</span>
@@ -82,7 +82,7 @@ export default function Portfolio() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="mt-6 text-base sm:text-lg text-slate-600 leading-relaxed font-medium"
+            className="mt-4 text-sm sm:text-lg text-slate-600 leading-relaxed font-medium"
           >
             Explore our curated showcase of high-performance websites, mobile applications, and data solutions crafted for clients who demand the best in technology.
           </motion.p>
