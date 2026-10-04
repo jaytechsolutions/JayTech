@@ -118,7 +118,7 @@ export default function Auth() {
 
         if (!userSnap.exists()) {
           const userEmailLower = user.email?.toLowerCase();
-          const isAdmin = userEmailLower === 'jaytechsolutions.net@gmail.com' || userEmailLower === 'kobbijaysoftware@gmail.com';
+          const isAdmin = userEmailLower === 'kobbilabs@gmail.com' || userEmailLower === 'kobbijaysoftware@gmail.com';
           try {
             await setDoc(userRef, {
               name: user.displayName || user.email?.split('@')[0] || 'User',

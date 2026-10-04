@@ -20,6 +20,7 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Contact = lazy(() => import('./pages/Contact'));
 const Cart = lazy(() => import('./pages/Cart'));
 const Portfolio = lazy(() => import('./pages/Portfolio'));
+const About = lazy(() => import('./pages/About'));
 
 function LoadingScreen() {
   return (
@@ -74,6 +75,7 @@ export default function App() {
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/services" element={<Services />} />
+                  <Route path="/about" element={<About />} />
                   <Route path="/training" element={<Training />} />
                   <Route path="/course" element={<Training />} />
                   <Route path="/courses" element={<Training />} />
