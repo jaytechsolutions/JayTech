@@ -68,7 +68,7 @@ export default function Training() {
             <motion.h1 
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="text-3xl sm:text-5xl font-black text-slate-950 mb-4 md:mb-6 tracking-tight leading-tight"
+              className="text-3xl min-[400px]:text-4xl sm:text-5xl font-black text-slate-950 mb-4 md:mb-6 tracking-tight leading-tight break-words"
             >
               Interactive <span className="text-primary italic">Online Classes</span>
             </motion.h1>

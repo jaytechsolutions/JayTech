@@ -102,7 +102,7 @@ export default function ContactForm({
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>Direct Support Dispatch</span>
           </div>
-          <h3 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
+          <h3 className="text-xl sm:text-3xl font-extrabold text-gray-900 tracking-tight break-words leading-tight">
             {title}
           </h3>
           <p className="mt-2 text-sm sm:text-base text-gray-600 leading-relaxed">

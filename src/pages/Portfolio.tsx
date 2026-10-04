@@ -73,7 +73,7 @@ export default function Portfolio() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-3xl sm:text-5xl font-black text-slate-950 tracking-tight mt-4 leading-tight"
+            className="text-3xl min-[400px]:text-4xl sm:text-5xl font-black text-slate-950 tracking-tight mt-4 leading-tight break-words"
           >
             Delivering Excellence <br />
             Through <span className="text-primary">Innovative Code</span>

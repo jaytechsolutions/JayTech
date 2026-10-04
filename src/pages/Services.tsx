@@ -157,7 +157,7 @@ export default function Services() {
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-3xl sm:text-5xl font-black text-slate-950 mb-4 tracking-tight leading-tight"
+            className="text-3xl min-[400px]:text-4xl sm:text-5xl font-black text-slate-950 mb-4 tracking-tight leading-tight break-words"
           >
             Professional <span className="text-primary">Software Solutions</span>
           </motion.h1>

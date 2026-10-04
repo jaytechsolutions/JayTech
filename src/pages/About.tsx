@@ -57,10 +57,10 @@ export default function About() {
           >
             <div>
               <span className="section-title">About Kobbi Labs</span>
-              <h1 className="text-4xl sm:text-6xl font-black text-slate-950 tracking-tight mt-4 leading-tight">
+              <h1 className="text-3xl min-[400px]:text-4xl sm:text-6xl font-black text-slate-950 tracking-tight mt-4 leading-tight break-words">
                 Empowering the Future Through <span className="text-primary">Innovative Code</span>
               </h1>
-              <p className="mt-6 text-lg text-slate-600 leading-relaxed font-medium">
+              <p className="mt-6 text-sm min-[400px]:text-base sm:text-lg text-slate-600 leading-relaxed font-medium">
                 Kobbi Labs is a premier technology firm based in Ghana, dedicated to transforming businesses and empowering individuals through world-class software development and professional IT training.
               </p>
             </div>

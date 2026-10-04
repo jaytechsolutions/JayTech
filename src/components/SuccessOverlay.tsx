@@ -54,8 +54,8 @@ export default function SuccessOverlay({ show, onClose, title = "Success!", mess
             >
               <CheckCircle2 className="w-12 h-12 text-green-600" />
             </motion.div>
-            <h3 className="text-2xl font-black text-gray-900 mb-2">{title}</h3>
-            <p className="text-gray-600 font-medium">{message}</p>
+            <h3 className="text-xl sm:text-2xl font-black text-gray-900 mb-2 break-words leading-tight">{title}</h3>
+            <p className="text-gray-600 font-medium break-words leading-relaxed">{message}</p>
           </motion.div>
         </div>
       )}

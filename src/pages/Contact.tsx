@@ -27,7 +27,7 @@ export default function Contact() {
           <div className="lg:col-span-5 space-y-6">
             <div className="bg-navy rounded-[32px] md:rounded-[40px] p-8 md:p-10 text-white shadow-2xl border border-gray-800">
               <h2 className="text-xl md:text-2xl font-bold mb-2">Direct Contact Channels</h2>
-              <p className="text-gray-400 text-xs md:text-sm mb-8 md:text-sm mb-10 leading-relaxed">
+              <p className="text-gray-400 text-xs md:text-sm mb-10 leading-relaxed break-words">
                 Connect directly with the <strong>Kobbi Labs</strong> engineering and instructor desk.
               </p>
 
