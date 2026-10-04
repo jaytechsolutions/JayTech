@@ -4,7 +4,7 @@ import { db, auth } from '../lib/firebase';
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'motion/react';
-import { Code, Smartphone, Database, BarChart, Share2, Wrench, CheckCircle2, Send, Clock, DollarSign, X, AlertCircle } from 'lucide-react';
+import { Globe, Smartphone, Database, PenTool, Layout, GraduationCap, Send, Clock, DollarSign, X, AlertCircle } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useCurrency } from '../contexts/CurrencyContext';
@@ -13,61 +13,57 @@ import SuccessOverlay from '../components/SuccessOverlay';
 import ServiceCard from '../components/ServiceCard';
 import FAQSection from '../components/FAQSection';
 
-import webDevImg from '../assets/images/web_dev_service_1790442249672.jpg';
-import webAppImg from '../assets/images/web_app_service_1790442260815.jpg';
-import mobileAppImg from '../assets/images/mobile_apps_service_1790442271604.jpg';
-import databaseImg from '../assets/images/database_service_1790442282173.jpg';
-import dataAnalyticsImg from '../assets/images/data_analytics_service_1790442292160.jpg';
-import socialMediaImg from '../assets/images/social_media_service_1790442303999.jpg';
+import serviceWebDev from '../assets/images/service_web_dev_1791113708173.jpg';
+import serviceMobileApp from '../assets/images/service_mobile_app_1791113723459.jpg';
+import serviceDataAnalysis from '../assets/images/service_data_analysis_1791113737387.jpg';
+import serviceBranding from '../assets/images/service_branding_1791113749847.jpg';
+import serviceSoftwareSolutions from '../assets/images/service_software_solutions_1791113764337.jpg';
 
 const services = [
   {
     id: 'web-dev',
-    title: 'Website Development',
-    desc: 'High-performance, responsive websites tailored to your brand.',
-    icon: Code,
-    image: webDevImg,
+    title: 'Web development',
+    desc: 'Modern, fast and responsive websites for your brand or business.',
+    icon: Globe,
+    image: serviceWebDev,
+    color: 'bg-purple-100 text-purple-600',
     features: ['Custom Design', 'SEO Optimized', 'Mobile Responsive', 'Contact Forms']
   },
   {
-    id: 'web-app',
-    title: 'Web Application Development',
-    desc: 'Complex, scalable web systems with rich functionality.',
-    icon: Share2,
-    image: webAppImg,
-    features: ['User Auth', 'Database Integration', 'API Development', 'Admin Panel']
-  },
-  {
     id: 'mobile-app',
-    title: 'Mobile Apps',
-    desc: 'Native-feel applications for iOS and Android platforms.',
+    title: 'Mobile app development',
+    desc: 'Powerful Android & iOS apps for your ideas.',
     icon: Smartphone,
-    image: mobileAppImg,
-    features: ['Cross-platform', 'Push Notifications', 'App Store Ready', 'Offline Support']
-  },
-  {
-    id: 'database-mgt',
-    title: 'Database Management',
-    desc: 'Robust data storage and management solutions.',
-    icon: Database,
-    image: databaseImg,
-    features: ['Data Modeling', 'Optimization', 'Security', 'Backup Systems']
+    image: serviceMobileApp,
+    color: 'bg-blue-100 text-blue-600',
+    features: ['Android & iOS', 'Push Notifications', 'App Store Ready', 'Offline Support']
   },
   {
     id: 'data-analytics',
-    title: 'Data Analytics',
-    desc: 'Advanced data analysis and visualization for insights.',
-    icon: BarChart,
-    image: dataAnalyticsImg,
-    features: ['Custom Dashboards', 'Predictive Analysis', 'Reporting', 'Data Cleaning']
+    title: 'Data analysis and visualization',
+    desc: 'Turn your data into meaningful insights and smart decisions.',
+    icon: Database,
+    image: serviceDataAnalysis,
+    color: 'bg-emerald-100 text-emerald-600',
+    features: ['Custom Dashboards', 'Business Intelligence', 'Data Strategy', 'Reporting']
   },
   {
-    id: 'social-media',
-    title: 'Social Media Management',
-    desc: 'Complete digital presence and engagement strategy.',
-    icon: Wrench,
-    image: socialMediaImg,
-    features: ['Content Creation', 'Scheduling', 'Analytics', 'Ad Management']
+    id: 'design-branding',
+    title: 'Graphic design and branding',
+    desc: 'Creative designs that make your brand stand out.',
+    icon: PenTool,
+    image: serviceBranding,
+    color: 'bg-pink-100 text-pink-600',
+    features: ['Logo Design', 'Brand Identity', 'Marketing Materials', 'UI/UX Design']
+  },
+  {
+    id: 'software-solutions',
+    title: 'Software solution',
+    desc: 'Custom software for businesses, schools, churches and institutions.',
+    icon: Layout,
+    image: serviceSoftwareSolutions,
+    color: 'bg-orange-100 text-orange-600',
+    features: ['Custom Systems', 'Cloud Integration', 'Automation', 'Scalable Architecture']
   }
 ];
 
@@ -155,21 +151,21 @@ export default function Services() {
   };
 
   return (
-    <div className="min-h-screen pt-24 pb-16 bg-gray-50">
+    <div className="min-h-screen pt-32 sm:pt-40 pb-16 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-4xl md:text-5xl font-black text-gray-900 mb-4"
+            className="text-3xl sm:text-5xl font-black text-slate-950 mb-4 tracking-tight leading-tight"
           >
-            Professional <span className="text-blue-600">Software Solutions</span>
+            Professional <span className="text-primary">Software Solutions</span>
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-xl text-gray-600 max-w-2xl mx-auto"
+            className="text-base sm:text-xl text-slate-900 font-bold max-w-2xl mx-auto leading-relaxed"
           >
             Choose from our range of expert software services. Submit your project requirements directly to our admin team for review and fast confirmation.
           </motion.p>
@@ -177,17 +173,17 @@ export default function Services() {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="mt-6 flex justify-center"
+            className="mt-8 flex justify-center"
           >
             <button
               onClick={() => {
                 setFormError(null);
                 setSelectedService(services[0]);
               }}
-              className="px-6 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-extrabold text-sm rounded-2xl shadow-lg shadow-blue-600/25 hover:shadow-blue-600/40 hover:scale-105 active:scale-95 transition-all flex items-center space-x-2 cursor-pointer"
+              className="px-8 py-5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black text-sm rounded-2xl shadow-lg shadow-blue-600/25 hover:shadow-blue-600/40 hover:scale-105 active:scale-95 transition-all flex items-center space-x-2 cursor-pointer w-full sm:w-auto justify-center"
             >
               <Send className="w-4 h-4" />
-              <span>Fill Service Order Form / Request Quote</span>
+              <span>Request a Custom Quote</span>
             </button>
           </motion.div>
         </div>
@@ -232,7 +228,7 @@ export default function Services() {
                   <X className="w-5 h-5" />
                 </button>
                 <span className="text-blue-300 text-xs font-bold uppercase tracking-wider block mb-1">
-                  JayTech Solutions • Service Request Form
+                  Kobbi Labs • Service Request Form
                 </span>
                 <h3 className="text-2xl font-black text-white">Order {selectedService.title}</h3>
                 <p className="text-sm text-gray-300 mt-1">
@@ -395,7 +391,7 @@ export default function Services() {
         show={showSuccess} 
         onClose={() => setShowSuccess(false)} 
         title="Order Submitted Successfully!"
-        message="Your service order has been sent to the JayTech Solutions admin dashboard. The administrator will review and acknowledge your request promptly."
+        message="Your service order has been sent to the Kobbi Labs admin dashboard. The administrator will review and acknowledge your request promptly."
       />
 
       {/* Interactive FAQ Section to answer software development and quote inquiries */}

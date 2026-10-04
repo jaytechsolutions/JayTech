@@ -1,74 +1,175 @@
-import { Facebook, Instagram, Youtube, Mail, Github, Twitter } from 'lucide-react';
+import { Facebook, Instagram, Youtube, Mail, Github, Twitter, Send, Phone, MapPin, Linkedin, CheckCircle2, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import logoImg from '../assets/images/kobbi_labs_final_logo_1790937512033.jpg';
+import { useState } from 'react';
+import { db } from '../lib/firebase';
+import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 
-const TikTokIcon = () => (
-  <svg 
-    viewBox="0 0 24 24" 
-    fill="currentColor" 
-    className="w-5 h-5"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.89-.6-4.09-1.47-.88-.64-1.61-1.46-2.11-2.42-.02 2.34.02 12.18-.01 14.51-.1 1.86-.81 3.72-2.33 4.86-1.58 1.2-3.83 1.55-5.77 1.01-1.94-.53-3.73-2.07-4.32-3.99-.78-2.48-.12-5.49 1.77-7.23 1.34-1.25 3.22-1.89 5.02-1.76v4.05c-1.12-.13-2.33.15-3.15.96-.82.81-1.14 2.05-.75 3.13.39 1.06 1.56 1.82 2.68 1.8 1.12-.01 2.22-.73 2.59-1.78.14-.38.19-.79.18-1.2V.02z"/>
+const XIcon = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.045 4.126H5.078z"/>
   </svg>
 );
 
 export default function Footer() {
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !email.includes('@')) {
+      setErrorMsg('Please enter a valid email.');
+      setStatus('error');
+      return;
+    }
+
+    setStatus('loading');
+    setErrorMsg('');
+
+    try {
+      // Check if already exists
+      const q = query(collection(db, 'newsletter_subscribers'), where('email', '==', email.toLowerCase().trim()));
+      const snap = await getDocs(q);
+      
+      if (!snap.empty) {
+        setStatus('success');
+        setEmail('');
+        return;
+      }
+
+      await addDoc(collection(db, 'newsletter_subscribers'), {
+        email: email.toLowerCase().trim(),
+        subscribedAt: serverTimestamp()
+      });
+
+      setStatus('success');
+      setEmail('');
+    } catch (err: any) {
+      console.error('Subscription error:', err);
+      setErrorMsg('Failed to subscribe. Please try again.');
+      setStatus('error');
+    }
+  };
+
   return (
-    <footer className="bg-gray-900 text-gray-300 py-12">
+    <footer className="bg-navy text-gray-400 pt-20 pb-10 border-t border-gray-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-16">
           {/* Brand */}
-          <div className="col-span-1 md:col-span-2">
-            <h2 className="text-2xl font-bold text-white mb-4">JayTech Solutions</h2>
-            <p className="text-gray-400 mb-6 max-w-md">
-              Building cutting-edge software solutions and empowering the next generation of tech leaders through professional training. Located in Koforidua, Ghana.
-            </p>
-            <div className="flex space-x-4">
-              <a href="https://facebook.com/JayTechSolutions" className="hover:text-blue-500 transition-colors">
-                <Facebook className="w-5 h-5" />
-              </a>
-              <a href="https://instagram.com/JayTechSolutions" className="hover:text-pink-500 transition-colors">
-                <Instagram className="w-5 h-5" />
-              </a>
-              <a href="https://youtube.com/JayTech" className="hover:text-red-500 transition-colors">
-                <Youtube className="w-5 h-5" />
-              </a>
-              <a href="https://tiktok.com/@JayTech" className="hover:text-white transition-colors">
-                <TikTokIcon />
-              </a>
-            </div>
+          <div className="lg:col-span-1">
+            <Link to="/" className="flex items-center space-x-3 mb-6 group">
+              <div className="relative w-10 h-10 overflow-hidden rounded-lg shrink-0">
+                <img 
+                  src={logoImg} 
+                  alt="Kobbi Labs" 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xl font-bold text-white tracking-tight leading-none">
+                  Kobbi <span className="text-primary">Labs</span>
+                </span>
+                <span className="text-[9px] font-medium text-gray-500 uppercase tracking-widest mt-1">
+                  Innovate • Build • Transform
+                </span>
+              </div>
+            </Link>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h3 className="text-lg font-semibold text-white mb-4">Quick Links</h3>
-            <ul className="space-y-2">
-              <li><Link to="/services" className="hover:text-blue-400 transition-colors">Services</Link></li>
-              <li><Link to="/training" className="hover:text-blue-400 transition-colors">Course & Training</Link></li>
-              <li><Link to="/contact" className="hover:text-blue-400 transition-colors">Contact Support</Link></li>
-              <li><a href="#faq" className="hover:text-blue-400 transition-colors">Frequently Asked Questions</a></li>
+            <h3 className="text-white font-bold text-sm mb-6 uppercase tracking-wider">Quick Links</h3>
+            <ul className="space-y-4 text-xs font-medium">
+              <li><Link to="/" className="hover:text-primary transition-colors">Home</Link></li>
+              <li><Link to="/about" className="hover:text-primary transition-colors">About</Link></li>
+              <li><Link to="/services" className="hover:text-primary transition-colors">Services</Link></li>
+              <li><Link to="/portfolio" className="hover:text-primary transition-colors">Portfolio</Link></li>
             </ul>
           </div>
 
-          {/* Contact */}
+          {/* More Links */}
           <div>
-            <h3 className="text-lg font-semibold text-white mb-4">Contact Us</h3>
-            <ul className="space-y-2.5">
-              <li className="flex items-center space-x-2">
-                <Mail className="w-4 h-4 text-blue-400 flex-shrink-0" />
-                <a href="mailto:jaytechsolutions.net@gmail.com" className="hover:text-blue-400 truncate">jaytechsolutions.net@gmail.com</a>
+            <h3 className="text-transparent mb-6">.</h3>
+            <ul className="space-y-4 text-xs font-medium">
+              <li><Link to="/training" className="hover:text-primary transition-colors">Courses</Link></li>
+              <li><Link to="/contact" className="hover:text-primary transition-colors">Contact</Link></li>
+              <li><Link to="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
+            </ul>
+          </div>
+
+          {/* Contact Us */}
+          <div>
+            <h3 className="text-white font-bold text-sm mb-6 uppercase tracking-wider">Contact Us</h3>
+            <ul className="space-y-4 text-xs font-medium">
+              <li className="flex items-center gap-3">
+                <Phone className="w-4 h-4 text-primary" />
+                <span>024 586 2205 (WhatsApp)</span>
               </li>
-              <li>
-                <Link to="/contact" className="inline-block mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-md">
-                  Open Support Inquiry Form
-                </Link>
+              <li className="flex items-center gap-3">
+                <Phone className="w-4 h-4 text-primary" />
+                <span>020 416 8810 (Call Only)</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <Mail className="w-4 h-4 text-primary" />
+                <span className="truncate">kobbilabs@gmail.com</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <MapPin className="w-4 h-4 text-primary" />
+                <span>Koforidua, Ghana</span>
               </li>
             </ul>
+          </div>
+
+          {/* Follow Us & Newsletter */}
+          <div className="lg:col-span-1">
+            <h3 className="text-white font-bold text-sm mb-6 uppercase tracking-wider">Follow Us</h3>
+            <div className="flex space-x-4 mb-8">
+              <a href="#" className="hover:text-white transition-colors p-2 rounded-full hover:bg-white/5"><Facebook className="w-4 h-4" /></a>
+              <a href="#" className="hover:text-white transition-colors p-2 rounded-full hover:bg-white/5"><XIcon /></a>
+              <a href="#" className="hover:text-white transition-colors p-2 rounded-full hover:bg-white/5"><Instagram className="w-4 h-4" /></a>
+              <a href="#" className="hover:text-white transition-colors p-2 rounded-full hover:bg-white/5"><Youtube className="w-4 h-4" /></a>
+              <a href="#" className="hover:text-white transition-colors p-2 rounded-full hover:bg-white/5"><Linkedin className="w-4 h-4" /></a>
+            </div>
+
+            <h3 className="text-white font-bold text-sm mb-4">Subscribe to Our Newsletter</h3>
+            <p className="text-[10px] mb-4">Get the latest updates, tips and offers.</p>
+            <form onSubmit={handleSubscribe} className="relative mb-2">
+              <input 
+                type="email" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email address" 
+                disabled={status === 'loading' || status === 'success'}
+                className="w-full bg-white/5 border border-gray-800 rounded-full py-3 px-5 text-xs focus:outline-none focus:border-primary transition-all disabled:opacity-50"
+              />
+              <button 
+                type="submit"
+                disabled={status === 'loading' || status === 'success'}
+                className="absolute right-1 top-1 bottom-1 aspect-square bg-primary hover:bg-primary-dark text-white rounded-full flex items-center justify-center transition-all disabled:bg-gray-600 disabled:opacity-50"
+              >
+                {status === 'loading' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+              </button>
+            </form>
+            {status === 'success' && (
+              <div className="flex items-center gap-2 text-[10px] text-emerald-400 font-bold animate-in fade-in slide-in-from-top-1">
+                <CheckCircle2 className="w-3 h-3" />
+                <span>Successfully subscribed!</span>
+              </div>
+            )}
+            {status === 'error' && (
+              <p className="text-[10px] text-red-400 font-bold">{errorMsg}</p>
+            )}
           </div>
         </div>
 
-        <div className="border-t border-gray-800 mt-12 pt-8 text-sm text-center">
-          <p>© {new Date().getFullYear()} JayTech Solutions. All rights reserved.</p>
+        {/* Bottom Bar */}
+        <div className="pt-8 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="text-[10px] font-medium">© {new Date().getFullYear()} Kobbi Labs. All rights reserved.</p>
+          <div className="flex items-center space-x-6 text-[10px] font-medium">
+            <Link to="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
+            <Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
+          </div>
         </div>
       </div>
     </footer>

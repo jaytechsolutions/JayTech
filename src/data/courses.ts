@@ -1,12 +1,22 @@
 import { Cpu, BarChart2, Layout, FileText, PlayCircle, Monitor } from 'lucide-react';
-import genAiImg from '../assets/images/gen_ai_course_1790441828237.jpg';
-import dataAnalysisImg from '../assets/images/data_analysis_course_1790441840563.jpg';
-import msExcelImg from '../assets/images/ms_excel_course_1790441853787.jpg';
-import msWordImg from '../assets/images/ms_word_course_1790441865892.jpg';
-import msPowerpointImg from '../assets/images/ms_powerpoint_course_1790441879408.jpg';
-import basicComputingImg from '../assets/images/basic_computing_course_1790441895421.jpg';
+import genAiImg from '../assets/images/gen_ai_training_high_res_1790873694909.jpg';
+import dataAnalysisImg from '../assets/images/data_analysis_training_high_res_1790873703864.jpg';
+import msExcelImg from '../assets/images/ms_office_training_high_res_1790873715447.jpg';
+import msWordImg from '../assets/images/ms_office_training_high_res_1790873715447.jpg';
+import msPowerpointImg from '../assets/images/ms_office_training_high_res_1790873715447.jpg';
+import basicComputingImg from '../assets/images/basic_computing_high_res_1790873752837.jpg';
 
-export const courses = [
+export interface Course {
+  id: string;
+  title: string;
+  desc: string;
+  icon: any;
+  price: number;
+  image: string;
+  features: string[];
+}
+
+export const courses: Course[] = [
   {
     id: 'gen-ai',
     title: 'Generative AI',

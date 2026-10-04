@@ -24,13 +24,13 @@ const FAQ_DATA: FAQItem[] = [
     id: 'tr-2',
     category: 'training',
     question: 'Are the training schedules fixed or self-paced?',
-    answer: 'All our training courses are 100% self-paced and on-demand! There are no rigid lecture timetables or deadlines. You can watch the lessons, repeat tricky concepts, and submit assignments whenever your work and family schedule permits.'
+    answer: 'Our training courses follow a fixed schedule to ensure structured learning and group progress! Each cohort starts and ends on specific dates, with live sessions and interactive check-ins conducted according to a professional timetable shared upon enrollment.'
   },
   {
     id: 'tr-3',
     category: 'training',
     question: 'What courses are currently open for enrollment?',
-    answer: 'We currently offer 6 specialized IT courses:\n• Generative AI (GHS 400)\n• Data Analysis with Power BI (GHS 400)\n• Microsoft Excel Advanced (GHS 350)\n• Microsoft PowerPoint Presentation Design (GHS 250)\n• Basic Computing & Digital Literacy (GHS 250)\n• Microsoft Word Professional (GHS 200)\n\nEach course is led by our experienced instructor Joseph Amponsah.'
+    answer: 'We currently offer 6 specialized IT courses:\n• Generative AI (GHS 400)\n• Data Analysis with Power BI (GHS 400)\n• Microsoft Excel Advanced (GHS 350)\n• Microsoft PowerPoint Presentation Design (GHS 250)\n• Basic Computing & Digital Literacy (GHS 250)\n• Microsoft Word Professional (GHS 200)\n\nEach course is led by the experienced technical team at Kobbi Labs.'
   },
   {
     id: 'tr-4',
@@ -43,14 +43,14 @@ const FAQ_DATA: FAQItem[] = [
   {
     id: 'sv-1',
     category: 'services',
-    question: 'What software development services does JayTech Solutions offer?',
+    question: 'What software development services does Kobbi Labs offer?',
     answer: 'We deliver full-cycle software engineering:\n• Custom Websites (Responsive, SEO-optimized landing pages & business portfolios)\n• Web Applications (Cloud systems, secure multi-user portals, databases)\n• Mobile Applications (Cross-platform iOS and Android apps)\n• Enterprise Database Architecture (High availability & security hardening)\n• Data Analytics & BI Dashboards\n• Social Media Strategy & Management'
   },
   {
     id: 'sv-2',
     category: 'services',
     question: 'How do I request a custom software quote or consultation?',
-    answer: 'You can submit your project requirements through our Services page by selecting a service and clicking "Order / Request Quote", or by filling out our Contact form. You can also chat directly with Joseph Amponsah on WhatsApp at +233 24 586 2205.'
+    answer: 'You can submit your project requirements through our Services page by selecting a service and clicking "Order / Request Quote", or by filling out our Contact form. You can also chat directly with Kobbi Labs on WhatsApp at +233 24 586 2205.'
   },
   {
     id: 'sv-3',
@@ -79,8 +79,8 @@ const FAQ_DATA: FAQItem[] = [
     id: 'cr-1',
     category: 'certificates',
     badge: 'Official Credential',
-    question: 'Are JayTech certificates verified and recognized?',
-    answer: 'Yes! Every course graduate receives an official JayTech Solutions Certificate of Completion featuring an encrypted unique Verification ID and verifiable QR code that employers or institutions can scan to confirm your credential.'
+    question: 'Are Kobbi Labs certificates verified and recognized?',
+    answer: 'Yes! Every course graduate receives an official Kobbi Labs Certificate of Completion featuring an encrypted unique Verification ID and verifiable QR code that employers or institutions can scan to confirm your credential.'
   },
   {
     id: 'cr-2',
@@ -130,32 +130,32 @@ export default function FAQSection() {
   };
 
   return (
-    <section className="py-24 bg-white border-t border-gray-100" id="faq">
+    <section className="py-20 sm:py-24 bg-white border-t border-gray-100" id="faq">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center mb-12">
-          <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 bg-blue-50 text-blue-700 rounded-full text-xs font-bold uppercase tracking-wider mb-4 border border-blue-100/60 shadow-sm">
+          <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 bg-blue-50 text-blue-700 rounded-full text-[10px] font-black uppercase tracking-wider mb-4 border border-blue-100/60 shadow-sm">
             <HelpCircle className="w-4 h-4 text-blue-600" />
             <span>Interactive Knowledge Base</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900 tracking-tight">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900 tracking-tight">
             Frequently Asked Questions
           </h2>
-          <p className="mt-4 text-base sm:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-            Find immediate answers regarding our software development services, self-paced training curriculum, Power BI modules, and Paystack Mobile Money payments.
+          <p className="mt-4 text-base sm:text-lg text-slate-900 font-bold max-w-2xl mx-auto leading-relaxed">
+            Find immediate answers regarding our software development services, fixed-schedule training curriculum, Power BI modules, and Paystack Mobile Money payments.
           </p>
         </div>
 
         {/* Search & Filter Toolbar */}
         <div className="space-y-4 mb-10">
           <div className="relative max-w-xl mx-auto">
-            <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
             <input
               type="text"
               placeholder="Search questions (e.g., Power BI, certificate, MoMo, schedule)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-gray-900 placeholder-gray-400 focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-100 outline-none transition-all text-sm font-medium shadow-sm"
+              className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-gray-900 placeholder-slate-500 focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-100 outline-none transition-all text-sm font-black shadow-sm"
             />
             {searchQuery && (
               <button
@@ -189,12 +189,12 @@ export default function FAQSection() {
             })}
           </div>
 
-          <div className="flex items-center justify-between text-xs text-gray-500 px-2 pt-2">
+          <div className="flex items-center justify-between text-xs text-slate-700 font-black px-2 pt-2 uppercase tracking-widest">
             <span>Showing {filteredFAQs.length} questions</span>
             <div className="space-x-3">
-              <button onClick={expandAll} className="hover:text-blue-600 font-semibold">Expand All</button>
+              <button onClick={expandAll} className="hover:text-blue-600 transition-colors">Expand All</button>
               <span>•</span>
-              <button onClick={collapseAll} className="hover:text-blue-600 font-semibold">Collapse All</button>
+              <button onClick={collapseAll} className="hover:text-blue-600 transition-colors">Collapse All</button>
             </div>
           </div>
         </div>
@@ -245,7 +245,7 @@ export default function FAQSection() {
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.25, ease: 'easeInOut' }}
                       >
-                        <div className="px-6 pb-6 pt-1 text-sm sm:text-base text-gray-600 leading-relaxed border-t border-gray-100/60 whitespace-pre-line">
+                        <div className="px-6 pb-6 pt-1 text-sm sm:text-base text-slate-950 font-medium leading-relaxed border-t border-gray-100/60 whitespace-pre-line">
                           {faq.answer}
                         </div>
                       </motion.div>
@@ -272,9 +272,9 @@ export default function FAQSection() {
         {/* Quick Contact Assistance Banner */}
         <div className="mt-14 p-8 sm:p-10 bg-gradient-to-tr from-slate-900 via-blue-950 to-slate-900 rounded-3xl text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="space-y-2 text-center md:text-left">
-            <h3 className="text-2xl font-bold">Have a specific question not listed here?</h3>
+            <h3 className="text-2xl font-bold text-white">Have a specific question not listed here?</h3>
             <p className="text-sm text-slate-300 max-w-xl">
-              Our support team and instructor Joseph Amponsah are available to answer your technical and enrollment inquiries directly.
+              Our support team at Kobbi Labs is available to answer your technical and enrollment inquiries directly.
             </p>
           </div>
 
@@ -286,7 +286,7 @@ export default function FAQSection() {
               className="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold flex items-center space-x-2 transition-all shadow-md shadow-emerald-900/30"
             >
               <MessageCircle className="w-4 h-4" />
-              <span>WhatsApp Joseph</span>
+              <span>WhatsApp Kobbi Labs</span>
             </a>
             <Link
               to="/contact"

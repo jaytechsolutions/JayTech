@@ -13,7 +13,7 @@ export default function ContactForm({
   defaultCategory = 'Software Development',
   defaultSubject = '',
   title = 'Send an Inquiry to Our Support Team',
-  subtitle = 'Have questions about a software project, course enrollment, or custom IT consultation? Fill out the form below and Joseph Amponsah and the team will get back to you promptly.'
+  subtitle = 'Have questions about a software project, course enrollment, or custom IT consultation? Fill out the form below and the Kobbi Labs team will get back to you promptly.'
 }: ContactFormProps) {
   const [formData, setFormData] = useState({
     name: '',
@@ -120,7 +120,7 @@ export default function ContactForm({
               {successMsg}
             </p>
             <p className="text-xs text-emerald-600">
-              A copy has been routed to <strong>jaytechsolutions.net@gmail.com</strong>, and our instructor Joseph Amponsah will review it shortly.
+              A copy has been routed to <strong>kobbilabs@gmail.com</strong>, and our support team at Kobbi Labs will review it shortly.
             </p>
             <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
               <button
@@ -278,7 +278,7 @@ export default function ContactForm({
       <div className="bg-gray-50 border-t border-gray-100 px-8 sm:px-12 py-6 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-gray-600">
         <div className="flex items-center space-x-2.5">
           <Mail className="w-4 h-4 text-blue-600 flex-shrink-0" />
-          <span className="truncate">jaytechsolutions.net@gmail.com</span>
+          <span className="truncate">kobbilabs@gmail.com</span>
         </div>
         <div className="flex items-center space-x-2.5">
           <Phone className="w-4 h-4 text-blue-600 flex-shrink-0" />

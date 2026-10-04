@@ -46,7 +46,11 @@ import {
   Film,
   Eye,
   Smartphone,
-  Phone
+  Phone,
+  Mail,
+  Archive,
+  CheckSquare,
+  Send
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -58,17 +62,39 @@ import { setDoc } from 'firebase/firestore';
 import { courses } from '../data/courses';
 import CertificateModal from '../components/CertificateModal';
 import PaystackPaymentModal from '../components/PaystackPaymentModal';
+import StudentCoursesDashboard from '../components/StudentCoursesDashboard';
 import { CreditCard, Lock } from 'lucide-react';
+import logoImg from '../assets/images/kobbi_labs_final_logo_1790937512033.jpg';
+
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 export default function Dashboard() {
   const [user] = useAuthState(auth);
   const { formatPrice } = useCurrency();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  
+  const activeTab = searchParams.get('tab') || 'overview';
+  const setActiveTab = (tab: string) => {
+    setSearchParams(prev => {
+      prev.set('tab', tab);
+      return prev;
+    });
+  };
+
+  const adminSubTab = (searchParams.get('adminTab') as 'enrollments' | 'users' | 'inquiries' | 'subscribers') || 'enrollments';
+  const setAdminSubTab = (subTab: string) => {
+    setSearchParams(prev => {
+      prev.set('adminTab', subTab);
+      return prev;
+    });
+  };
+
   const [role, setRole] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('overview');
   const [showNotifMenu, setShowNotifMenu] = useState(false);
 
   const isAdmin = role === 'admin' || 
-    user?.email?.toLowerCase() === 'jaytechsolutions.net@gmail.com' || 
+    user?.email?.toLowerCase() === 'kobbilabs@gmail.com' || 
     user?.email?.toLowerCase() === 'kobbijaysoftware@gmail.com';
 
   useEffect(() => {
@@ -78,7 +104,9 @@ export default function Dashboard() {
         if (snap.exists()) {
           setRole(snap.data().role);
         } else {
-          const isUserAdmin = user.email?.toLowerCase() === 'jaytechsolutions.net@gmail.com' || user.email?.toLowerCase() === 'kobbijaysoftware@gmail.com';
+          const isUserAdmin = 
+            user.email?.toLowerCase() === 'kobbilabs@gmail.com' || 
+            user.email?.toLowerCase() === 'kobbijaysoftware@gmail.com';
           const defaultRole = isUserAdmin ? 'admin' : 'user';
           try {
             await setDoc(doc(db, 'users', user.uid), {
@@ -116,15 +144,24 @@ export default function Dashboard() {
     return notifications.filter((n: any) => !n.read);
   }, [notifications]);
 
-  // For admin: also count unseen pending orders
+  // For admin: also count unseen pending orders and new inquiries
   const ordersSummaryQuery = isAdmin ? query(collection(db, 'orders')) : null;
+  const inquiriesSummaryQuery = isAdmin ? query(collection(db, 'inquiries'), where('status', '==', 'new')) : null;
+  
   const [ordersSummarySnap] = useCollection(ordersSummaryQuery);
+  const [inquiriesSummarySnap] = useCollection(inquiriesSummaryQuery);
+
   const unseenPendingOrdersCount = useMemo(() => {
     if (!isAdmin || !ordersSummarySnap) return 0;
     return ordersSummarySnap.docs.filter(d => !d.data().adminSeen && (d.data().status === 'pending' || d.data().status === 'submitted')).length;
   }, [isAdmin, ordersSummarySnap]);
 
-  const totalAlertsCount = unreadNotifications.length + unseenPendingOrdersCount;
+  const newInquiriesCount = useMemo(() => {
+    if (!isAdmin || !inquiriesSummarySnap) return 0;
+    return inquiriesSummarySnap.docs.length;
+  }, [isAdmin, inquiriesSummarySnap]);
+
+  const totalAlertsCount = unreadNotifications.length + unseenPendingOrdersCount + newInquiriesCount;
   const shouldBellBlink = totalAlertsCount > 0;
 
   const markNotificationAsRead = async (id: string) => {
@@ -147,25 +184,35 @@ export default function Dashboard() {
   if (!user) return <div className="pt-24 text-center">Loading...</div>;
 
   return (
-    <div className="min-h-screen pt-24 pb-12 bg-gray-50 px-4">
+    <div className="min-h-screen pt-16 md:pt-[112px] pb-12 bg-gray-50 px-4">
       <div className="max-w-7xl mx-auto">
-        <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center space-x-2">
-              <h1 className="text-3xl font-extrabold text-gray-900">
-                {isAdmin ? 'JayTech Admin Command Hub' : 'Student Dashboard'}
-              </h1>
-              {isAdmin && (
-                <span className="bg-red-100 text-red-700 text-xs font-black uppercase px-2.5 py-1 rounded-full border border-red-200">
-                  Administrator
-                </span>
-              )}
+        <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex items-center space-x-4">
+            <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-xl border border-white ring-4 ring-blue-50 shrink-0">
+              <img 
+                src={logoImg} 
+                alt="Kobbi Labs Logo" 
+                className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
+              />
             </div>
-            <p className="text-gray-600 mt-1">
-              {isAdmin 
-                ? `Logged in as Admin: ${user.email} • Full business & academy management active`
-                : `Welcome back, ${user.displayName || user.email?.split('@')[0] || 'Student'}`}
-            </p>
+            <div>
+              <div className="flex items-center space-x-2">
+                <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
+                  {isAdmin ? 'Admin Command Hub' : 'Student Portal'}
+                </h1>
+                {isAdmin && (
+                  <span className="bg-red-100 text-red-700 text-[10px] font-black uppercase px-2 py-0.5 rounded-full border border-red-200">
+                    Administrator
+                  </span>
+                )}
+              </div>
+              <p className="text-gray-500 text-sm font-medium mt-0.5">
+                {isAdmin 
+                  ? `Kobbi Labs Central Management • ${user.email}`
+                  : `Welcome back, ${user.displayName || user.email?.split('@')[0] || 'Student'}`}
+              </p>
+            </div>
           </div>
           
           <div className="flex items-center space-x-3">
@@ -227,22 +274,40 @@ export default function Dashboard() {
                       )}
                     </div>
 
-                    {/* Unseen pending orders banner for admin */}
-                    {isAdmin && unseenPendingOrdersCount > 0 && (
-                      <div 
-                        onClick={() => {
-                          setActiveTab('orders');
-                          setShowNotifMenu(false);
-                        }}
-                        className="p-3 bg-red-50 border-b border-red-200 text-red-800 text-xs font-bold flex items-center justify-between cursor-pointer hover:bg-red-100 transition-colors"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <Package className="w-4 h-4 text-red-600" />
-                          <span>{unseenPendingOrdersCount} new service orders need review!</span>
+                      {/* Unseen pending orders banner for admin */}
+                      {isAdmin && unseenPendingOrdersCount > 0 && (
+                        <div 
+                          onClick={() => {
+                            setActiveTab('orders');
+                            setShowNotifMenu(false);
+                          }}
+                          className="p-3 bg-red-50 border-b border-red-200 text-red-800 text-xs font-bold flex items-center justify-between cursor-pointer hover:bg-red-100 transition-colors"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <Package className="w-4 h-4 text-red-600" />
+                            <span>{unseenPendingOrdersCount} new service orders need review!</span>
+                          </div>
+                          <ArrowRight className="w-3.5 h-3.5" />
                         </div>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </div>
-                    )}
+                      )}
+
+                      {/* New Inquiries banner for admin */}
+                      {isAdmin && newInquiriesCount > 0 && (
+                        <div 
+                          onClick={() => {
+                            setActiveTab('training');
+                            setAdminSubTab('inquiries');
+                            setShowNotifMenu(false);
+                          }}
+                          className="p-3 bg-blue-50 border-b border-blue-200 text-blue-800 text-xs font-bold flex items-center justify-between cursor-pointer hover:bg-blue-100 transition-colors"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <Mail className="w-4 h-4 text-blue-600" />
+                            <span>{newInquiriesCount} new client inquiries received!</span>
+                          </div>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </div>
+                      )}
                     <div className="max-h-80 overflow-y-auto divide-y divide-gray-100">
                       {notifications.length > 0 ? (
                         notifications.map((n: any) => (
@@ -382,24 +447,30 @@ export default function Dashboard() {
               )}
             >
               <GraduationCap className="w-5 h-5" />
-              <span>{isAdmin ? 'Manage Students & Courses' : 'My Courses'}</span>
+              <span>{isAdmin ? 'Manage Students & Classes' : 'My Registered Classes'}</span>
             </button>
             {isAdmin && (
-              <Fragment key="admin-nav-videos">
+              <Fragment key="admin-nav-extras">
                 <button
-                  onClick={() => setActiveTab('videos')}
+                  onClick={() => { setActiveTab('training'); setAdminSubTab('inquiries'); }}
                   className={cn(
                     "w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold transition-all cursor-pointer",
-                    activeTab === 'videos' ? "bg-blue-600 text-white shadow-md shadow-blue-600/20" : "bg-white text-gray-700 hover:bg-gray-100"
+                    activeTab === 'training' && adminSubTab === 'inquiries' ? "bg-blue-600 text-white shadow-md shadow-blue-600/20" : "bg-white text-gray-700 hover:bg-gray-100"
                   )}
                 >
-                  <PlayCircle className="w-5 h-5" />
-                  <span>Videos Management</span>
+                  <Mail className="w-5 h-5" />
+                  <span>Client Inquiries</span>
                 </button>
-              </Fragment>
-            )}
-            {isAdmin && (
-              <Fragment key="admin-nav-extras">
+                <button
+                  onClick={() => { setActiveTab('training'); setAdminSubTab('subscribers'); }}
+                  className={cn(
+                    "w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold transition-all cursor-pointer",
+                    activeTab === 'training' && adminSubTab === 'subscribers' ? "bg-blue-600 text-white shadow-md shadow-blue-600/20" : "bg-white text-gray-700 hover:bg-gray-100"
+                  )}
+                >
+                  <Send className="w-5 h-5" />
+                  <span>Newsletter List</span>
+                </button>
                 <button
                   onClick={() => setActiveTab('reviews')}
                   className={cn(
@@ -436,11 +507,12 @@ export default function Dashboard() {
                 <Training 
                   key="training" 
                   role={isAdmin ? 'admin' : (role || 'student')} 
-                  userId={user.uid} 
+                  userId={user.uid}
+                  adminSubTab={adminSubTab}
+                  setAdminSubTab={setAdminSubTab}
                 />
               )}
               {activeTab === 'reviews' && isAdmin && <ReviewsManager key="reviews" />}
-              {activeTab === 'videos' && isAdmin && <VideosManager key="videos" />}
             </AnimatePresence>
           </main>
         </div>
@@ -468,11 +540,8 @@ function Overview({ role, userId, onNavigateTab }: any) {
     ? query(collection(db, 'enrollments'))
     : query(collection(db, 'enrollments'), where('userId', '==', userId));
 
-  const videosQuery = query(collection(db, 'videos'));
-
   const [orders] = useCollectionData(ordersQuery);
   const [enrollments] = useCollectionData(enrollmentsQuery);
-  const [videos] = useCollectionData(videosQuery);
 
   const pendingOrders = useMemo(() => {
     return (orders || []).filter((o: any) => o.status === 'pending' || o.status === 'submitted' || !o.adminSeen);
@@ -481,8 +550,6 @@ function Overview({ role, userId, onNavigateTab }: any) {
   const activeStudents = useMemo(() => {
     return (enrollments || []).filter((e: any) => e.status === 'approved' || e.status === 'paid');
   }, [enrollments]);
-
-  // Admin Quick Action: Confirm Seen directly from Overview
   const handleOverviewConfirmSeen = async (orderId: string, serviceTitle: string, clientUserId?: string) => {
     try {
       await updateDoc(doc(db, 'orders', orderId), {
@@ -494,7 +561,7 @@ function Overview({ role, userId, onNavigateTab }: any) {
         await addDoc(collection(db, 'notifications'), {
           userId: clientUserId,
           title: 'Order Seen & Acknowledged ✅',
-          message: `Your service order for "${serviceTitle}" has been seen and acknowledged by JayTech Solutions admin! Our technical team is reviewing your project requirements.`,
+          message: `Your service order for "${serviceTitle}" has been seen and acknowledged by Kobbi Labs admin! Our technical team is reviewing your project requirements.`,
           orderId: orderId,
           type: 'order_acknowledged',
           read: false,
@@ -521,7 +588,7 @@ function Overview({ role, userId, onNavigateTab }: any) {
         await addDoc(collection(db, 'notifications'), {
           userId: clientUserId,
           title: 'Service Order Approved! 🎉',
-          message: `Your order for "${serviceTitle}" has been officially approved by JayTech Solutions admin!`,
+          message: `Your order for "${serviceTitle}" has been officially approved by Kobbi Labs admin!`,
           orderId: orderId,
           type: 'order_approved',
           read: false,
@@ -555,7 +622,7 @@ function Overview({ role, userId, onNavigateTab }: any) {
           await addDoc(collection(db, 'notifications'), {
             userId: order.userId,
             title: 'Service Order Approved! 🎉',
-            message: `Your order for "${order.serviceTitle}" has been officially approved by JayTech Solutions admin!`,
+            message: `Your order for "${order.serviceTitle}" has been officially approved by Kobbi Labs admin!`,
             orderId: order.id,
             type: 'order_approved',
             read: false,
@@ -608,15 +675,17 @@ function Overview({ role, userId, onNavigateTab }: any) {
 
       {/* Admin Command Banner */}
       {isAdmin ? (
-        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-950 rounded-3xl p-8 text-white shadow-xl border border-indigo-900/40 relative overflow-hidden">
+        <div className="bg-white rounded-3xl p-8 text-slate-900 shadow-lg border border-blue-100 relative overflow-hidden">
+          {/* Decorative background accent */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-20 -mt-20 opacity-50" />
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
-              <span className="bg-blue-500/20 text-blue-300 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full border border-blue-400/30">
-                JayTech Solutions • Command Center
+              <span className="bg-primary text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-sm">
+                Kobbi Labs • Command Center
               </span>
-              <h2 className="text-2xl md:text-3xl font-black mt-3">Administrator Overview</h2>
-              <p className="text-gray-300 text-sm mt-1 max-w-xl">
-                Manage incoming client orders, approve course enrollments, control video lectures, and monitor customer reviews.
+              <h2 className="text-2xl md:text-3xl font-black mt-3 text-slate-950">Administrator Overview</h2>
+              <p className="text-slate-700 font-bold text-sm mt-1 max-w-xl">
+                Manage incoming client orders, approve course enrollments, and monitor customer reviews.
               </p>
             </div>
 
@@ -624,7 +693,7 @@ function Overview({ role, userId, onNavigateTab }: any) {
               {pendingOrders.length > 0 && (
                 <button
                   onClick={handleOverviewApproveAll}
-                  className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center space-x-1.5 cursor-pointer active:scale-95"
+                  className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black transition-all shadow-lg shadow-emerald-500/20 flex items-center space-x-1.5 cursor-pointer active:scale-95"
                   title="Approve all pending orders immediately"
                 >
                   <CheckCircle className="w-4 h-4" />
@@ -633,24 +702,17 @@ function Overview({ role, userId, onNavigateTab }: any) {
               )}
               <button
                 onClick={() => onNavigateTab && onNavigateTab('orders')}
-                className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center space-x-1.5 cursor-pointer"
+                className="px-4 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-black transition-all shadow-lg shadow-primary/20 flex items-center space-x-1.5 cursor-pointer"
               >
                 <Package className="w-4 h-4" />
                 <span>Manage Orders ({orders?.length || 0})</span>
               </button>
               <button
                 onClick={() => onNavigateTab && onNavigateTab('training')}
-                className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center space-x-1.5 cursor-pointer"
+                className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-black transition-all shadow-lg shadow-slate-900/10 flex items-center space-x-1.5 cursor-pointer"
               >
                 <GraduationCap className="w-4 h-4" />
-                <span>Students & Courses</span>
-              </button>
-              <button
-                onClick={() => onNavigateTab && onNavigateTab('videos')}
-                className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition-all backdrop-blur-sm flex items-center space-x-1.5 cursor-pointer"
-              >
-                <PlayCircle className="w-4 h-4" />
-                <span>Videos Library ({videos?.length || 0})</span>
+                <span>Students & Classes</span>
               </button>
             </div>
           </div>
@@ -658,9 +720,9 @@ function Overview({ role, userId, onNavigateTab }: any) {
       ) : (
         <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-1">Welcome Back to JayTech!</h3>
+            <h3 className="text-2xl font-bold text-gray-900 mb-1">Welcome Back to Kobbi Labs!</h3>
             <p className="text-gray-600 text-sm">
-              Track your course progress, launch video tutorials, and track your submitted software service orders.
+              Track your registered classes, Course Codes, and submitted software service orders.
             </p>
           </div>
           <button
@@ -714,22 +776,6 @@ function Overview({ role, userId, onNavigateTab }: any) {
           </div>
           <span className="inline-block mt-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
             Active Enrollments
-          </span>
-        </div>
-
-        <div 
-          onClick={() => onNavigateTab && onNavigateTab('videos')}
-          className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:border-purple-200 transition-colors cursor-pointer"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Videos Library</span>
-            <div className="p-2 bg-purple-50 text-purple-600 rounded-xl">
-              <PlayCircle className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="text-2xl font-black text-gray-900">{videos?.length || 0}</div>
-          <span className="inline-block mt-1 text-[11px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full">
-            Published Lessons
           </span>
         </div>
 
@@ -898,7 +944,7 @@ function Orders({ role, userId }: any) {
         await addDoc(collection(db, 'notifications'), {
           userId: order.userId,
           title: 'Order Seen & Acknowledged ✅',
-          message: `Your service order for "${order.serviceTitle}" has been seen and acknowledged by JayTech Solutions admin! Our technical team is reviewing your project requirements.`,
+          message: `Your service order for "${order.serviceTitle}" has been seen and acknowledged by Kobbi Labs admin! Our technical team is reviewing your project requirements.`,
           orderId: order.id,
           type: 'order_acknowledged',
           read: false,
@@ -925,7 +971,7 @@ function Orders({ role, userId }: any) {
         await addDoc(collection(db, 'notifications'), {
           userId: order.userId,
           title: 'Service Order Approved! 🎉',
-          message: `Your order for "${order.serviceTitle}" has been officially approved by JayTech Solutions admin!`,
+          message: `Your order for "${order.serviceTitle}" has been officially approved by Kobbi Labs admin!`,
           orderId: order.id,
           type: 'order_approved',
           read: false,
@@ -966,7 +1012,7 @@ function Orders({ role, userId }: any) {
               await addDoc(collection(db, 'notifications'), {
                 userId: order.userId,
                 title: 'Service Order Approved! 🎉',
-                message: `Your order for "${order.serviceTitle}" has been officially approved by JayTech Solutions admin!`,
+                message: `Your order for "${order.serviceTitle}" has been officially approved by Kobbi Labs admin!`,
                 orderId: order.id,
                 type: 'order_approved',
                 read: false,
@@ -1067,11 +1113,11 @@ function Orders({ role, userId }: any) {
     const title = type === 'course' ? item.courseTitle : item.serviceTitle;
     const formattedAmount = `GH₵ ${Number(item.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     
-    // Header - JayTech Solutions, Koforidua, Ghana
+    // Header - Kobbi Labs, Koforidua, Ghana
     doc.setFontSize(22);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(37, 99, 235); // blue-600
-    doc.text('JAYTECH SOLUTIONS', 105, 20, { align: 'center' });
+    doc.text('KOBBI LABS', 105, 20, { align: 'center' });
     
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
@@ -1165,13 +1211,13 @@ function Orders({ role, userId }: any) {
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(37, 99, 235);
-    doc.text('Thank you for choosing JayTech Solutions!', 105, finalY + 44, { align: 'center' });
+    doc.text('Thank you for choosing Kobbi Labs!', 105, finalY + 44, { align: 'center' });
 
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(100);
     doc.text('Processed securely via Paystack Payment Gateway', 105, finalY + 50, { align: 'center' });
-    doc.text('JayTech Solutions • Koforidua, Ghana • All Rights Reserved', 105, finalY + 56, { align: 'center' });
+    doc.text('Kobbi Labs • Koforidua, Ghana • All Rights Reserved', 105, finalY + 56, { align: 'center' });
     
     doc.save(`Receipt_${title.replace(/\s+/g, '_')}_${receiptNum}.pdf`);
   };
@@ -1584,7 +1630,7 @@ function Orders({ role, userId }: any) {
                 </div>
                 <div>
                   <h4 className="text-lg font-black text-gray-900">{confirmModal.title}</h4>
-                  <p className="text-xs text-gray-500">JayTech Solutions Management Action</p>
+                  <p className="text-xs text-gray-500">Kobbi Labs Management Action</p>
                 </div>
               </div>
               <p className="text-xs text-gray-600 leading-relaxed mb-6">
@@ -1618,14 +1664,17 @@ function Orders({ role, userId }: any) {
 }
 
 
-function Training({ role, userId }: any) {
+function Training({ role, userId, adminSubTab: parentAdminSubTab, setAdminSubTab: setParentAdminSubTab }: any) {
   const isAdmin = role === 'admin';
   const { formatPrice } = useCurrency();
-  const [selectedCourse, setSelectedCourse] = useState<any>(null);
   const [certModalCourse, setCertModalCourse] = useState<{ id: string; title: string; userName?: string } | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
-  const [adminSubTab, setAdminSubTab] = useState<'enrollments' | 'users'>('enrollments');
+  const [localAdminSubTab, setLocalAdminSubTab] = useState<'enrollments' | 'users' | 'inquiries'>('enrollments');
+  
+  const adminSubTab = parentAdminSubTab || localAdminSubTab;
+  const setAdminSubTab = setParentAdminSubTab || setLocalAdminSubTab;
+
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -1662,6 +1711,18 @@ function Training({ role, userId }: any) {
   const usersQuery = isAdmin ? query(collection(db, 'users')) : null;
   const [usersSnap, loadingUsers] = useCollection(usersQuery);
 
+  // Query inquiries for admin
+  const inquiriesQuery = isAdmin ? query(collection(db, 'inquiries'), orderBy('createdAt', 'desc')) : null;
+  const [inquiriesSnap, loadingInquiries] = useCollection(inquiriesQuery);
+
+  const inquiriesList = useMemo<any[]>(() => {
+    if (!inquiriesSnap) return [];
+    return inquiriesSnap.docs.map(d => ({
+      id: d.id,
+      ...d.data()
+    }));
+  }, [inquiriesSnap]);
+
   const usersList = useMemo<any[]>(() => {
     if (!usersSnap) return [];
     return usersSnap.docs.map(d => ({
@@ -1673,12 +1734,6 @@ function Training({ role, userId }: any) {
       return timeB - timeA;
     });
   }, [usersSnap]);
-
-  const [progressSnap] = useCollection(query(collection(db, 'progress'), where('userId', '==', userId)));
-  const allProgress = useMemo(() => progressSnap?.docs.map(d => ({ id: d.id, ...d.data() })) || [], [progressSnap]);
-
-  const [videosSnap] = useCollection(collection(db, 'videos'));
-  const allVideos = useMemo(() => videosSnap?.docs.map(d => ({ id: d.id, ...d.data() })) || [], [videosSnap]);
 
   // Filtered enrollments for admin/student
   const filteredEnrollments = useMemo(() => {
@@ -1705,6 +1760,20 @@ function Training({ role, userId }: any) {
     );
   }, [usersList, searchQuery]);
 
+  // Filtered inquiries for admin
+  const filteredInquiries = useMemo(() => {
+    if (!inquiriesList) return [];
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return inquiriesList;
+    return inquiriesList.filter((i: any) => 
+      i.name?.toLowerCase().includes(q) || 
+      i.email?.toLowerCase().includes(q) ||
+      i.subject?.toLowerCase().includes(q) ||
+      i.message?.toLowerCase().includes(q) ||
+      i.category?.toLowerCase().includes(q)
+    );
+  }, [inquiriesList, searchQuery]);
+
   // Admin handles student enrollment status (Approve / Reject) with real-time notification to student
   const handleStatus = async (id: string, status: string, courseTitle?: string, studentName?: string) => {
     setProcessingId(id);
@@ -1724,7 +1793,7 @@ function Training({ role, userId }: any) {
         await addDoc(collection(db, 'notifications'), {
           userId: studentUserId,
           title: 'Course Approved! 🎉',
-          message: `Your enrollment for "${targetTitle}" has been approved by admin! You now have full access to course videos and materials.`,
+          message: `Your enrollment for "${targetTitle}" has been approved by admin! You now have full access to our online classes. Please check your email for the official WhatsApp group link.`,
           courseId: targetCourseId,
           courseTitle: targetTitle,
           type: 'course_approved',
@@ -1851,23 +1920,44 @@ function Training({ role, userId }: any) {
     }
   };
 
-  const getProgress = (courseId: string) => {
-    if (!allVideos || !allProgress) return 0;
-    const courseVideos = allVideos.filter((v: any) => v.courseId === courseId);
-    if (courseVideos.length === 0) return 0;
-    const completedCount = allProgress.filter((p: any) => p.courseId === courseId && p.completed).length;
-    return Math.round((completedCount / courseVideos.length) * 100);
+  // Admin marks inquiry as read/replied
+  const handleInquiryStatus = async (id: string, status: string) => {
+    setProcessingId(id);
+    try {
+      await updateDoc(doc(db, 'inquiries', id), { status });
+      setToast({ type: 'success', message: `Inquiry marked as ${status}.` });
+    } catch (err) {
+      console.error(err);
+      setToast({ type: 'error', message: 'Failed to update inquiry status.' });
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  // Admin deletes inquiry
+  const handleDeleteInquiry = async (id: string) => {
+    if (!confirm('Permanently delete this inquiry?')) return;
+    setProcessingId(id);
+    try {
+      await deleteDoc(doc(db, 'inquiries', id));
+      setToast({ type: 'success', message: 'Inquiry deleted successfully.' });
+    } catch (err) {
+      console.error(err);
+      setToast({ type: 'error', message: 'Failed to delete inquiry.' });
+    } finally {
+      setProcessingId(null);
+    }
   };
 
   const downloadReceipt = (en: any) => {
     const doc = new jsPDF();
     const formattedAmount = `GH₵ ${Number(en.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     
-    // Header - Kobbyjay Software Services, Koforidua, Ghana
+    // Header - Kobbi Labs, Koforidua, Ghana
     doc.setFontSize(22);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(37, 99, 235); // blue-600
-    doc.text('KOBBYJAY SOFTWARE SERVICES', 105, 20, { align: 'center' });
+    doc.text('KOBBI LABS', 105, 20, { align: 'center' });
     
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
@@ -1984,13 +2074,13 @@ function Training({ role, userId }: any) {
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(37, 99, 235);
-    doc.text('Thank you for choosing JayTech Solutions!', 105, finalY + 45, { align: 'center' });
+    doc.text('Thank you for choosing Kobbi Labs!', 105, finalY + 45, { align: 'center' });
 
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(100);
     doc.text('Processed securely via Paystack Payment Gateway', 105, finalY + 51, { align: 'center' });
-    doc.text('JayTech Solutions • Koforidua, Ghana • All Rights Reserved', 105, finalY + 57, { align: 'center' });
+    doc.text('Kobbi Labs • Koforidua, Ghana • All Rights Reserved', 105, finalY + 57, { align: 'center' });
     
     doc.save(`Receipt_${(en.courseTitle || 'Course').replace(/\s+/g, '_')}_${receiptNum}.pdf`);
   };
@@ -2079,6 +2169,35 @@ function Training({ role, userId }: any) {
                 {usersList.length}
               </span>
             </button>
+            <button
+              onClick={() => { setAdminSubTab('inquiries'); setSearchQuery(''); }}
+              className={cn(
+                "flex items-center space-x-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all cursor-pointer",
+                adminSubTab === 'inquiries'
+                  ? "bg-blue-600 text-white shadow-sm shadow-blue-500/20"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              )}
+            >
+              <Mail className="w-4 h-4" />
+              <span>Client Inquiries</span>
+              {inquiriesList.filter(i => i.status === 'new').length > 0 && (
+                <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-black animate-pulse">
+                  {inquiriesList.filter(i => i.status === 'new').length} New
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => { setAdminSubTab('subscribers'); setSearchQuery(''); }}
+              className={cn(
+                "flex items-center space-x-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all cursor-pointer",
+                adminSubTab === 'subscribers'
+                  ? "bg-blue-600 text-white shadow-sm shadow-blue-500/20"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              )}
+            >
+              <Send className="w-4 h-4" />
+              <span>Subscribers</span>
+            </button>
           </div>
 
           {/* Quick Search */}
@@ -2096,9 +2215,9 @@ function Training({ role, userId }: any) {
       )}
 
       {/* VIEW 1: ENROLLMENTS TABLE (Students & Admin) */}
-      {(role !== 'admin' || adminSubTab === 'enrollments') && (
+      {role === 'admin' ? (
         <motion.div 
-          key="enrollments-view"
+          key="enrollments-view-admin"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden"
@@ -2106,80 +2225,57 @@ function Training({ role, userId }: any) {
           <div className="p-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h3 className="text-xl font-bold text-gray-900">
-                {role === 'admin' ? 'Student Course Enrollments' : 'My Learning & Enrolled Courses'}
+                Student Course Enrollments
               </h3>
               <p className="text-xs text-gray-500 mt-1">
-                {role === 'admin' 
-                  ? 'Review course applications, activate approvals, or delete student records.' 
-                  : 'Track your course progress, download official receipts, or launch video tutorials.'}
+                Review course applications, activate approvals, or delete student records.
               </p>
             </div>
 
-            {role === 'admin' && (
-              <div className="flex items-center space-x-1 bg-gray-100 p-1 rounded-xl text-xs font-semibold">
-                <button
-                  onClick={() => setStatusFilter('all')}
-                  className={cn(
-                    "px-3 py-1.5 rounded-lg transition-colors cursor-pointer",
-                    statusFilter === 'all' ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"
-                  )}
-                >
-                  All ({enrollments.length})
-                </button>
-                <button
-                  onClick={() => setStatusFilter('pending')}
-                  className={cn(
-                    "px-3 py-1.5 rounded-lg transition-colors cursor-pointer",
-                    statusFilter === 'pending' ? "bg-white text-yellow-700 shadow-sm font-bold" : "text-gray-600 hover:text-gray-900"
-                  )}
-                >
-                  Pending ({pendingCount})
-                </button>
-                <button
-                  onClick={() => setStatusFilter('approved')}
-                  className={cn(
-                    "px-3 py-1.5 rounded-lg transition-colors cursor-pointer",
-                    statusFilter === 'approved' ? "bg-white text-green-700 shadow-sm font-bold" : "text-gray-600 hover:text-gray-900"
-                  )}
-                >
-                  Approved
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Student Status Guidance Banner */}
-          {role !== 'admin' && enrollments.some((e: any) => e.status === 'approved' || e.status === 'paid') && (
-            <div className="mx-6 mt-6 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between gap-4 text-emerald-900">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-sm">
-                  <CheckCircle className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-sm">Course Enrollment Approved! 🎉</h4>
-                  <p className="text-xs text-emerald-700 mt-0.5">
-                    Your enrollment has been approved by admin. You now have full access to watch videos and complete lessons.
-                  </p>
-                </div>
-              </div>
+            <div className="flex items-center space-x-1 bg-gray-100 p-1 rounded-xl text-xs font-semibold">
+              <button
+                onClick={() => setStatusFilter('all')}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg transition-colors cursor-pointer",
+                  statusFilter === 'all' ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"
+                )}
+              >
+                All ({enrollments.length})
+              </button>
+              <button
+                onClick={() => setStatusFilter('pending')}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg transition-colors cursor-pointer",
+                  statusFilter === 'pending' ? "bg-white text-yellow-700 shadow-sm font-bold" : "text-gray-600 hover:text-gray-900"
+                )}
+              >
+                Pending ({pendingCount})
+              </button>
+              <button
+                onClick={() => setStatusFilter('approved')}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg transition-colors cursor-pointer",
+                  statusFilter === 'approved' ? "bg-white text-green-700 shadow-sm font-bold" : "text-gray-600 hover:text-gray-900"
+                )}
+              >
+                Approved
+              </button>
             </div>
-          )}
+          </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead className="bg-gray-50 text-gray-500 text-sm uppercase font-semibold">
                 <tr>
                   <th className="px-6 py-4">Course</th>
-                  <th className="px-6 py-4">{role === 'admin' ? 'Student / Reference' : 'Status & Info'}</th>
-                  <th className="px-6 py-4">Progress</th>
+                  <th className="px-6 py-4">Student / Reference</th>
+                  <th className="px-6 py-4">Course Access Code</th>
                   <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {filteredEnrollments.length > 0 ? (
                   filteredEnrollments.map((en: any, idx: number) => {
-                    const progress = getProgress(en.courseId);
-                    const courseData = courses.find(c => c.id === en.courseId);
                     const isApproved = en.status === 'approved' || en.status === 'paid';
                     const isPending = en.status === 'pending';
                     const isCancelled = en.status === 'cancelled';
@@ -2191,7 +2287,7 @@ function Training({ role, userId }: any) {
                         <td className="px-6 py-4">
                           <div className="font-bold text-gray-900">{en.courseTitle}</div>
                           <div className="text-[11px] text-teal-600 font-semibold mt-1">
-                            Self-Paced Flexible Access
+                            Interactive Online Class
                           </div>
                           <div className="mt-1 flex items-center gap-2">
                             <span className={cn(
@@ -2231,20 +2327,17 @@ function Training({ role, userId }: any) {
                           </div>
                         </td>
 
-                        {/* Progress */}
+                        {/* Access Code */}
                         <td className="px-6 py-4">
                           {isApproved ? (
                             <div className="w-full max-w-xs">
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs font-bold text-gray-600">{progress}% Completed</span>
+                              <div className="flex items-center space-x-2">
+                                <span className="bg-blue-50 text-blue-700 font-mono text-sm px-3 py-1.5 rounded-lg border border-blue-100 font-black">
+                                  {en.enrollmentCode || 'KL-WAITING'}
+                                </span>
+                                <Lock className="w-3.5 h-3.5 text-blue-400" />
                               </div>
-                              <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                                <motion.div 
-                                  initial={{ width: 0 }}
-                                  animate={{ width: `${progress}%` }}
-                                  className="bg-blue-600 h-2 rounded-full"
-                                />
-                              </div>
+                              <p className="text-[10px] text-gray-400 mt-1">Use this code for class verification</p>
                             </div>
                           ) : (
                             <span className="text-xs text-gray-400 italic">Locked until approved</span>
@@ -2253,119 +2346,58 @@ function Training({ role, userId }: any) {
 
                         {/* Actions */}
                         <td className="px-6 py-4 text-right">
-                          {role === 'admin' ? (
-                            /* ADMIN ACTIONS */
-                            <div className="flex items-center justify-end space-x-2">
-                              {/* ACTIVE APPROVE BUTTON FOR ADMIN */}
-                              {!isApproved ? (
-                                <button 
-                                  key={`approve-${en.id}`}
-                                  disabled={processingId === en.id}
-                                  onClick={() => handleStatus(en.id, 'approved', en.courseTitle, en.userName)}
-                                  className="flex items-center space-x-1.5 px-3.5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm shadow-green-600/20 active:scale-95 cursor-pointer disabled:opacity-50"
-                                  title="Approve Student Enrollment"
-                                >
-                                  <CheckCircle className="w-4 h-4" />
-                                  <span>{processingId === en.id ? 'Approving...' : 'Approve Student'}</span>
-                                </button>
-                              ) : (
-                                <div className="flex items-center space-x-1.5">
-                                  <span className="inline-flex items-center text-green-700 bg-green-50 border border-green-200 px-2.5 py-1 rounded-xl text-xs font-bold">
-                                    <Check className="w-3.5 h-3.5 mr-1 text-green-600" />
-                                    <span>Approved</span>
-                                  </span>
-                                  <button
-                                    onClick={() => downloadReceipt(en)}
-                                    className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
-                                    title="Download Student Payment Receipt"
-                                  >
-                                    <Download className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    onClick={() => setCertModalCourse({ id: en.courseId, title: en.courseTitle, userName: en.userName })}
-                                    className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
-                                    title="View / Issue Student Certificate"
-                                  >
-                                    <Award className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleStatus(en.id, 'pending', en.courseTitle, en.userName)}
-                                    className="text-[10px] text-gray-400 hover:text-gray-600 underline px-1 py-0.5"
-                                    title="Reset back to pending"
-                                  >
-                                    Reset
-                                  </button>
-                                </div>
-                              )}
-
-                              {/* DELETE ENROLLMENT BUTTON FOR ADMIN */}
+                          <div className="flex items-center justify-end space-x-2">
+                            {!isApproved ? (
                               <button 
-                                key={`del-${en.id}`}
+                                key={`approve-${en.id}`}
                                 disabled={processingId === en.id}
-                                onClick={() => handleDeleteEnrollment(en.id, en.courseTitle, en.userName)}
-                                className="p-2 text-red-500 hover:bg-red-50 hover:text-red-700 rounded-xl transition-colors cursor-pointer"
-                                title="Delete Enrollment"
+                                onClick={() => handleStatus(en.id, 'approved', en.courseTitle, en.userName)}
+                                className="flex items-center space-x-1.5 px-3.5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm shadow-green-600/20 active:scale-95 cursor-pointer disabled:opacity-50"
+                                title="Approve Student Enrollment"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <CheckCircle className="w-4 h-4" />
+                                <span>{processingId === en.id ? 'Approving...' : 'Approve Student'}</span>
                               </button>
-                            </div>
-                          ) : (
-                            /* STUDENT ACTIONS */
-                            <div className="flex flex-col items-end space-y-2">
-                              {isApproved && (
-                                <button 
-                                  key={`watch-${en.id}`}
-                                  onClick={() => setSelectedCourse({ id: en.courseId, title: en.courseTitle })}
-                                  className="flex items-center space-x-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer"
-                                >
-                                  <PlayCircle className="w-4 h-4" />
-                                  <span>Watch Videos</span>
-                                </button>
-                              )}
-
-                              {isApproved && (
-                                <button 
-                                  key={`cert-${en.id}`}
-                                  onClick={() => setCertModalCourse({ id: en.courseId, title: en.courseTitle, userName: en.userName })}
-                                  className={cn(
-                                    "flex items-center space-x-1.5 px-3 py-1.5 rounded-xl font-bold text-xs transition-all cursor-pointer shadow-sm",
-                                    progress === 100 
-                                      ? "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-amber-500/20 active:scale-95" 
-                                      : "text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200"
-                                  )}
-                                  title="View, customize and download your official certificate"
-                                >
-                                  <Award className="w-3.5 h-3.5 text-amber-400" />
-                                  <span>{progress === 100 ? 'Claim Certificate 🎓' : 'Certificate'}</span>
-                                </button>
-                              )}
-
-                              {isApproved && (
-                                <button 
-                                  key={`receipt-${en.id}`}
+                            ) : (
+                              <div className="flex items-center space-x-1.5">
+                                <span className="inline-flex items-center text-green-700 bg-green-50 border border-green-200 px-2.5 py-1 rounded-xl text-xs font-bold">
+                                  <Check className="w-3.5 h-3.5 mr-1 text-green-600" />
+                                  <span>Approved</span>
+                                </span>
+                                <button
                                   onClick={() => downloadReceipt(en)}
-                                  className="flex items-center space-x-1.5 text-blue-600 font-semibold text-xs hover:underline cursor-pointer"
+                                  className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                                  title="Download Student Payment Receipt"
                                 >
-                                  <Download className="w-3.5 h-3.5" />
-                                  <span>Download Receipt</span>
+                                  <Download className="w-4 h-4" />
                                 </button>
-                              )}
+                                <button
+                                  onClick={() => setCertModalCourse({ id: en.courseId, title: en.courseTitle, userName: en.userName })}
+                                  className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
+                                  title="View / Issue Student Certificate"
+                                >
+                                  <Award className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleStatus(en.id, 'pending', en.courseTitle, en.userName)}
+                                  className="text-[10px] text-gray-400 hover:text-gray-600 underline px-1 py-0.5"
+                                  title="Reset back to pending"
+                                >
+                                  Reset
+                                </button>
+                              </div>
+                            )}
 
-                              {/* ACTIVE CANCEL COURSE BUTTON ONLY FOR PENDING / UNAPPROVED COURSES */}
-                              {!isApproved && en.status !== 'cancelled' && (
-                                <button 
-                                  key={`cancel-${en.id}`}
-                                  disabled={cancellingId === en.id}
-                                  onClick={() => handleCancel(en.id, en.courseTitle)}
-                                  className="flex items-center space-x-1.5 px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white border border-red-200/80 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer disabled:opacity-50"
-                                  title="Cancel this pending enrollment"
-                                >
-                                  <XCircle className="w-3.5 h-3.5" />
-                                  <span>{cancellingId === en.id ? 'Cancelling...' : 'Cancel Course'}</span>
-                                </button>
-                              )}
-                            </div>
-                          )}
+                            <button 
+                              key={`del-${en.id}`}
+                              disabled={processingId === en.id}
+                              onClick={() => handleDeleteEnrollment(en.id, en.courseTitle, en.userName)}
+                              className="p-2 text-red-500 hover:bg-red-50 hover:text-red-700 rounded-xl transition-colors cursor-pointer"
+                              title="Delete Enrollment"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -2376,11 +2408,6 @@ function Training({ role, userId }: any) {
                       <td colSpan={4} className="px-6 py-12 text-center text-gray-500">
                         <GraduationCap className="w-10 h-10 text-gray-300 mx-auto mb-2" />
                         <p className="font-semibold text-gray-700">No course enrollments found.</p>
-                        <p className="text-xs text-gray-400 mt-1">
-                          {role === 'admin' 
-                            ? 'No students match the current filter or search criteria.' 
-                            : 'You have not enrolled in any training courses yet.'}
-                        </p>
                       </td>
                     </tr>
                   ) : null
@@ -2389,6 +2416,12 @@ function Training({ role, userId }: any) {
             </table>
           </div>
         </motion.div>
+      ) : (
+        <StudentCoursesDashboard 
+          enrollments={enrollments}
+          onDownloadReceipt={downloadReceipt}
+          onOpenCertificate={(en) => setCertModalCourse({ id: en.courseId, title: en.courseTitle, userName: en.userName })}
+        />
       )}
 
       {/* VIEW 2: REGISTERED USERS & STUDENTS DIRECTORY (ADMIN ONLY) */}
@@ -2535,20 +2568,113 @@ function Training({ role, userId }: any) {
         </motion.div>
       )}
 
-      {/* Video Player Modal */}
-      <AnimatePresence>
-        {selectedCourse && (
-          <VideoPlayer 
-            key="video-player"
-            courseId={selectedCourse.id} 
-            courseTitle={selectedCourse.title}
-            userId={userId}
-            role={role}
-            onOpenCertificate={() => setCertModalCourse({ id: selectedCourse.id, title: selectedCourse.title })}
-            onClose={() => setSelectedCourse(null)} 
-          />
-        )}
-      </AnimatePresence>
+      {/* VIEW 3: CLIENT INQUIRIES MANAGEMENT (ADMIN ONLY) */}
+      {role === 'admin' && adminSubTab === 'inquiries' && (
+        <motion.div 
+          key="inquiries-view"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden"
+        >
+          <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-bold text-gray-900">Incoming Client Inquiries</h3>
+              <p className="text-xs text-gray-500 mt-1">
+                Manage questions submitted via the contact form. These are saved here instead of only being sent to Gmail.
+              </p>
+            </div>
+            <div className="text-xs font-semibold text-gray-500">
+              Total Inquiries: {filteredInquiries.length}
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="bg-gray-50 text-gray-500 text-sm uppercase font-semibold">
+                <tr>
+                  <th className="px-6 py-4">Sender & Contact</th>
+                  <th className="px-6 py-4">Inquiry Details</th>
+                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filteredInquiries.length > 0 ? (
+                  filteredInquiries.map((inq: any, idx: number) => {
+                    const isNew = inq.status === 'new';
+                    const inqRowKey = `inquiry-row-${inq.id || idx}`;
+
+                    return (
+                      <tr key={inqRowKey} className={cn("hover:bg-gray-50/80 transition-colors", isNew ? "bg-blue-50/30" : "")}>
+                        <td className="px-6 py-4">
+                          <div className="font-bold text-gray-900">{inq.name}</div>
+                          <div className="text-xs text-blue-600 font-medium">{inq.email}</div>
+                          <div className="text-[10px] text-gray-500 mt-1 flex items-center">
+                            <Phone className="w-3 h-3 mr-1" />
+                            {inq.phone}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-[10px] font-black uppercase text-primary tracking-widest mb-1">{inq.category}</div>
+                          <div className="text-sm font-bold text-gray-900 mb-1">{inq.subject}</div>
+                          <p className="text-xs text-gray-600 line-clamp-2 max-w-md italic">"{inq.message}"</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={cn(
+                            "px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider",
+                            isNew ? "bg-blue-100 text-blue-700" : inq.status === 'replied' ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"
+                          )}>
+                            {inq.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex items-center justify-end space-x-2">
+                            {isNew ? (
+                              <button
+                                onClick={() => handleInquiryStatus(inq.id, 'read')}
+                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                                title="Mark as Read"
+                              >
+                                <CheckSquare className="w-4 h-4" />
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleInquiryStatus(inq.id, 'new')}
+                                className="p-2 text-gray-400 hover:bg-gray-100 rounded-xl transition-all"
+                                title="Mark as New"
+                              >
+                                <Archive className="w-4 h-4" />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleDeleteInquiry(inq.id)}
+                              className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                              title="Delete Inquiry"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr key="empty-inquiries">
+                    <td colSpan={4} className="px-6 py-12 text-center text-gray-500 font-bold">
+                      No inquiries found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </motion.div>
+      )}
+
+      {/* VIEW 4: NEWSLETTER SUBSCRIBERS (ADMIN ONLY) */}
+      {role === 'admin' && adminSubTab === 'subscribers' && (
+        <SubscribersManager />
+      )}
 
       {/* Official Certificate Modal */}
       {certModalCourse && (
@@ -2564,318 +2690,63 @@ function Training({ role, userId }: any) {
   );
 }
 
-function VideoPlayer({ courseId, courseTitle, userId, role, onOpenCertificate, onClose }: any) {
-  const videoQuery = query(collection(db, 'videos'), where('courseId', '==', courseId));
-  const [videosSnap, loading] = useCollection(videoQuery);
-  const videos = useMemo<any[]>(() => {
-    if (!videosSnap) return [];
-    return videosSnap.docs
-      .map(d => ({ id: d.id, ...d.data() }))
-      .sort((a: any, b: any) => {
-        const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0);
-        const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0);
-        return timeA - timeB;
-      });
-  }, [videosSnap]);
-  const [activeVideo, setActiveVideo] = useState<any>(null);
+function SubscribersManager() {
+  const [subs] = useCollectionData(query(collection(db, 'newsletter_subscribers'), orderBy('subscribedAt', 'desc')), { idField: 'id' } as any);
 
-  const progressQuery = query(collection(db, 'progress'), where('userId', '==', userId), where('courseId', '==', courseId));
-  const [progressSnap] = useCollection(progressQuery);
-  const progressData = useMemo<any[]>(() => progressSnap?.docs.map(d => ({ id: d.id, ...d.data() })) || [], [progressSnap]);
-
-  useEffect(() => {
-    if (videos && videos.length > 0 && !activeVideo) {
-      setActiveVideo(videos[0]);
-    } else if (videos && activeVideo && !videos.some((v: any) => v.id === activeVideo.id)) {
-      setActiveVideo(videos[0] || null);
-    }
-  }, [videos, activeVideo]);
-
-  const toggleComplete = async (vidId?: string) => {
-    const targetVideoId = vidId || activeVideo?.id;
-    if (!targetVideoId) {
-      console.warn('Cannot mark complete without valid videoId');
-      return;
-    }
-    const progressId = `${userId}_${courseId}_${targetVideoId}`;
-    const isCompleted = progressData?.find((p: any) => p.videoId === targetVideoId)?.completed;
-    
-    try {
-      await setDoc(doc(db, 'progress', progressId), {
-        userId,
-        courseId,
-        videoId: targetVideoId,
-        completed: !isCompleted,
-        updatedAt: serverTimestamp()
-      });
-    } catch (err: any) {
-      handleFirestoreError(err, OperationType.WRITE, `progress/${progressId}`);
-    }
+  const handleDelete = async (id: string) => {
+    if (confirm('Delete subscriber?')) await deleteDoc(doc(db, 'newsletter_subscribers', id));
   };
-
-  const completedCount = useMemo(() => {
-    return videos.filter((v: any) => progressData?.some((p: any) => p.videoId === v.id && p.completed)).length;
-  }, [videos, progressData]);
-
-  const progressPercent = videos.length > 0 ? Math.round((completedCount / videos.length) * 100) : 0;
-  const isCourseCompleted = videos.length > 0 && completedCount === videos.length;
-
-  const [confirmDeleteVid, setConfirmDeleteVid] = useState(false);
-
-  const handleDeleteCurrentVideo = async () => {
-    if (!activeVideo?.id) return;
-    if (!confirmDeleteVid) {
-      setConfirmDeleteVid(true);
-      setTimeout(() => setConfirmDeleteVid(false), 5000);
-      return;
-    }
-    const vidId = activeVideo.id;
-    const vidUrl = activeVideo.videoUrl;
-    try {
-      await deleteDoc(doc(db, 'videos', vidId));
-      if (vidUrl) {
-        axios.post('/api/delete-video', { videoUrl: vidUrl }).catch(() => {});
-      }
-      setActiveVideo(null);
-      setConfirmDeleteVid(false);
-    } catch (err: any) {
-      handleFirestoreError(err, OperationType.DELETE, `videos/${vidId}`);
-    }
-  };
-
-  const isActiveCompleted = activeVideo ? progressData?.find((p: any) => p.videoId === activeVideo.id)?.completed : false;
 
   return (
-    <div key="video-player-container" className="fixed inset-0 z-[100] flex items-center justify-center p-3 md:p-6">
-      <div key="video-backdrop" className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={onClose} />
-      <motion.div 
-        key="video-content"
-        initial={{ opacity: 0, scale: 0.92 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.92 }}
-        className="relative bg-white w-full max-w-6xl rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row h-[90vh] z-10 border border-gray-200"
-      >
-        {/* Left Column: Player & Active Lesson */}
-        <div className="flex-grow bg-black relative flex flex-col">
-          {/* Top Progress & Completion Ribbon */}
-          <div className="bg-gray-950 px-4 py-2.5 border-b border-gray-800 flex items-center justify-between text-xs">
-            <div className="flex items-center space-x-2 text-white">
-              <span className="font-bold text-blue-400">{courseTitle || 'Training Course'}</span>
-              <span className="text-gray-500">•</span>
-              <span className="text-gray-300 font-medium">
-                {completedCount} of {videos.length} Lessons Completed ({progressPercent}%)
-              </span>
-            </div>
-            {isCourseCompleted && (
-              <button
-                onClick={onOpenCertificate}
-                className="flex items-center space-x-1.5 px-3 py-1 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 rounded-lg font-black text-xs shadow-md animate-pulse cursor-pointer hover:from-amber-400 hover:to-amber-500"
-                title="Claim your official verified certificate"
-              >
-                <Award className="w-3.5 h-3.5" />
-                <span>Claim Certificate 🎓</span>
-              </button>
-            )}
-          </div>
-
-          {activeVideo ? (
-            <div className="flex-grow flex flex-col justify-between">
-              {/* Video Element */}
-              <div className="flex-grow bg-black flex items-center justify-center p-2">
-                <video
-                  key={activeVideo.id || activeVideo.videoUrl}
-                  src={activeVideo.videoUrl}
-                  className="w-full max-h-[60vh] object-contain rounded-xl"
-                  controls
-                  autoPlay
-                  title={activeVideo.title}
-                />
-              </div>
-
-              {/* Player Toolbar */}
-              <div className="p-4 bg-gray-900 border-t border-gray-800 flex flex-wrap justify-between items-center gap-3">
-                <div className="min-w-0">
-                  <h3 className="text-white font-bold text-base truncate max-w-md">{activeVideo.title}</h3>
-                  <p className="text-xs text-gray-400 line-clamp-1">{activeVideo.description || 'Hands-on practical lesson'}</p>
-                </div>
-
-                <div className="flex items-center space-x-2.5">
-                  {/* Mark as Completed Button */}
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden"
+    >
+      <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+        <div>
+          <h3 className="text-xl font-bold text-gray-900">Newsletter Subscribers</h3>
+          <p className="text-xs text-gray-500 mt-1">Manage users who have signed up for the newsletter.</p>
+        </div>
+        <div className="text-xs font-semibold text-gray-500">
+          Total Subscribers: {subs?.length || 0}
+        </div>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left">
+          <thead className="bg-gray-50 text-gray-500 text-sm uppercase font-semibold">
+            <tr>
+              <th className="px-6 py-4">Email</th>
+              <th className="px-6 py-4">Subscribed At</th>
+              <th className="px-6 py-4 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {subs?.map((sub: any) => (
+              <tr key={sub.id} className="hover:bg-gray-50 transition-colors">
+                <td className="px-6 py-4 font-bold text-gray-900">{sub.email}</td>
+                <td className="px-6 py-4 text-xs text-gray-500">
+                  {sub.subscribedAt?.toDate ? sub.subscribedAt.toDate().toLocaleString() : 'N/A'}
+                </td>
+                <td className="px-6 py-4 text-right">
                   <button 
-                    onClick={() => toggleComplete(activeVideo.id)}
-                    className={cn(
-                      "flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer",
-                      isActiveCompleted
-                        ? "bg-green-600 hover:bg-green-700 text-white shadow-green-600/20"
-                        : "bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/20"
-                    )}
+                    onClick={() => handleDelete(sub.id)} 
+                    className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-all cursor-pointer"
                   >
-                    {isActiveCompleted ? (
-                      <>
-                        <CheckCircle className="w-4 h-4 text-white" />
-                        <span>Completed ✓</span>
-                      </>
-                    ) : (
-                      <>
-                        <div className="w-4 h-4 rounded-full border-2 border-white/60" />
-                        <span>Mark as Completed</span>
-                      </>
-                    )}
+                    <Trash2 className="w-4 h-4" />
                   </button>
-
-                  {/* Admin Delete Video Button */}
-                  {role === 'admin' && (
-                    <button
-                      onClick={handleDeleteCurrentVideo}
-                      className="p-2.5 bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white rounded-xl text-xs font-bold transition-all cursor-pointer border border-red-500/30"
-                      title="Admin: Delete this video"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center flex-grow text-white text-center p-12">
-              <div>
-                <PlayCircle className="w-20 h-20 mx-auto mb-4 text-blue-500 opacity-60 animate-pulse" />
-                <p className="text-xl font-bold">Select a Lesson</p>
-                <p className="text-gray-400 mt-2 text-sm max-w-sm mx-auto">
-                  {videos.length > 0 
-                    ? 'Pick a video tutorial from the playlist on the right to start learning.' 
-                    : 'No lessons uploaded for this course yet.'}
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Right Column: Lessons Playlist Sidebar */}
-        <div className="w-full md:w-88 border-l border-gray-200 bg-gray-50 flex flex-col h-full">
-          {/* Playlist Header */}
-          <div className="p-5 border-b border-gray-200 bg-white">
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="text-base font-bold text-gray-900">Course Lessons</h4>
-              <span className="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full font-bold border border-blue-200">
-                {videos?.length || 0} Lessons
-              </span>
-            </div>
-            {/* Progress Bar */}
-            <div className="space-y-1">
-              <div className="flex justify-between text-[11px] font-bold text-gray-500">
-                <span>Course Progress</span>
-                <span className="text-blue-600 font-extrabold">{progressPercent}%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                <div 
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${progressPercent}%` }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Lessons List */}
-          <div className="p-4 space-y-2.5 overflow-y-auto flex-grow">
-            {loading ? (
-              <p className="text-xs text-gray-500 text-center py-6">Loading lessons...</p>
-            ) : videos?.map((vid: any, idx: number) => {
-              const isCompleted = progressData?.find((p: any) => p.videoId === vid.id)?.completed;
-              const isSelected = activeVideo?.id === vid.id;
-
-              return (
-                <div
-                  key={vid.id || `lesson-item-${idx}`}
-                  className={cn(
-                    "p-3 rounded-2xl transition-all border flex items-center justify-between gap-3 text-left group",
-                    isSelected
-                      ? "bg-blue-600 text-white border-blue-600 shadow-md"
-                      : "bg-white text-gray-900 border-gray-200 hover:border-blue-300"
-                  )}
-                >
-                  <button
-                    onClick={() => setActiveVideo(vid)}
-                    className="flex items-start space-x-3 min-w-0 flex-grow cursor-pointer text-left"
-                  >
-                    <div className={cn(
-                      "p-2 rounded-xl shrink-0 mt-0.5",
-                      isSelected ? "bg-white/20" : "bg-gray-100 text-gray-600"
-                    )}>
-                      <PlayCircle className="w-4 h-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className={cn("text-xs font-bold truncate", isSelected ? "text-white" : "text-gray-900")}>
-                        {idx + 1}. {vid.title}
-                      </p>
-                      <p className={cn(
-                        "text-[10px] line-clamp-1 mt-0.5",
-                        isSelected ? "text-blue-100" : "text-gray-400"
-                      )}>
-                        {vid.description || 'Lesson video'}
-                      </p>
-                    </div>
-                  </button>
-
-                  {/* Mark as Complete Quick-Toggle Checkbox */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleComplete(vid.id);
-                    }}
-                    className={cn(
-                      "p-1.5 rounded-lg shrink-0 transition-colors cursor-pointer",
-                      isCompleted 
-                        ? (isSelected ? "text-emerald-300 hover:text-white" : "text-green-600 hover:bg-green-50")
-                        : (isSelected ? "text-white/60 hover:text-white" : "text-gray-300 hover:text-gray-500 hover:bg-gray-100")
-                    )}
-                    title={isCompleted ? "Mark incomplete" : "Mark completed"}
-                  >
-                    {isCompleted ? (
-                      <CheckCircle className="w-5 h-5 fill-current" />
-                    ) : (
-                      <div className={cn(
-                        "w-4 h-4 rounded-full border-2",
-                        isSelected ? "border-white/50" : "border-gray-400"
-                      )} />
-                    )}
-                  </button>
-                </div>
-              );
-            })}
-
-            {videos?.length === 0 && (
-              <div className="text-center py-8 text-gray-400">
-                <PlayCircle className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                <p className="text-xs">No lessons uploaded yet for this course.</p>
-              </div>
+                </td>
+              </tr>
+            ))}
+            {subs?.length === 0 && (
+              <tr>
+                <td colSpan={3} className="px-6 py-12 text-center text-gray-400 font-medium">No subscribers yet.</td>
+              </tr>
             )}
-          </div>
-
-          {/* Certificate Quick Access Footer */}
-          {isCourseCompleted && (
-            <div className="p-4 bg-amber-50 border-t border-amber-200">
-              <button
-                onClick={onOpenCertificate}
-                className="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl font-bold text-xs shadow-md shadow-amber-500/20 flex items-center justify-center space-x-2 cursor-pointer transition-all active:scale-95"
-              >
-                <Award className="w-4 h-4" />
-                <span>View & Download Certificate</span>
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Modal Close Button */}
-        <button 
-          onClick={onClose} 
-          className="absolute top-3 right-3 bg-black/40 hover:bg-black/70 p-2 rounded-full text-white transition-colors backdrop-blur-sm z-20 cursor-pointer"
-          title="Close player"
-        >
-          <XCircle className="w-5 h-5" />
-        </button>
-      </motion.div>
-    </div>
+          </tbody>
+        </table>
+      </div>
+    </motion.div>
   );
 }
 
@@ -2928,551 +2799,5 @@ function ReviewsManager() {
         ))}
       </div>
     </motion.div>
-  );
-}
-
-function VideosManager() {
-  const [courseId, setCourseId] = useState('gen-ai');
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [uploadProgress, setUploadProgress] = useState<number>(0);
-  const [uploading, setUploading] = useState(false);
-  const [previewModalVideo, setPreviewModalVideo] = useState<any | null>(null);
-  const [videoToDelete, setVideoToDelete] = useState<any | null>(null);
-  const [deletedIds, setDeletedIds] = useState<string[]>([]);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const [videosSnap, loadingVideos] = useCollection(collection(db, 'videos'));
-  const rawVideos = useMemo<any[]>(() => videosSnap?.docs.map(d => ({ id: d.id, ...d.data() })) || [], [videosSnap]);
-
-  const videos = useMemo(() => {
-    return rawVideos
-      .filter((v: any) => !deletedIds.includes(v.id))
-      .sort((a: any, b: any) => {
-        const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0);
-        const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0);
-        return timeB - timeA;
-      });
-  }, [rawVideos, deletedIds]);
-
-  useEffect(() => {
-    if (toastMessage) {
-      const timer = setTimeout(() => setToastMessage(null), 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [toastMessage]);
-
-  const coursesList = [
-    { id: 'gen-ai', title: 'Generative AI' },
-    { id: 'data-analysis', title: 'Data Analysis' },
-    { id: 'ms-excel', title: 'Microsoft Excel' },
-    { id: 'ms-word', title: 'Microsoft Word' },
-    { id: 'ms-powerpoint', title: 'Microsoft PowerPoint' },
-    { id: 'basic-computing', title: 'Basic Computing' },
-  ];
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setVideoFile(file);
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
-      if (!title.trim()) {
-        const cleanName = file.name.replace(/\.[^/.]+$/, "").replace(/[_-]/g, ' ');
-        setTitle(cleanName);
-      }
-    }
-  };
-
-  const handleRemoveFile = () => {
-    setVideoFile(null);
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-      setPreviewUrl(null);
-    }
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!videoFile) {
-      setToastMessage('Please select an MP4 or VLC video file to upload.');
-      return;
-    }
-
-    setUploading(true);
-    setUploadProgress(10);
-
-    try {
-      const formData = new FormData();
-      formData.append('video', videoFile);
-
-      const res = await axios.post('/api/upload-video', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: (progressEvent) => {
-          if (progressEvent.total) {
-            const percent = Math.min(95, Math.round((progressEvent.loaded * 90) / progressEvent.total));
-            setUploadProgress(percent);
-          }
-        }
-      });
-
-      setUploadProgress(98);
-
-      const uploadedUrl = res.data?.url;
-      const uploadedFileName = res.data?.fileName || videoFile.name;
-      const uploadedFileSize = res.data?.fileSize || videoFile.size;
-
-      await addDoc(collection(db, 'videos'), {
-        courseId,
-        title: title.trim() || uploadedFileName,
-        description: description.trim(),
-        videoUrl: uploadedUrl,
-        fileName: uploadedFileName,
-        fileSize: uploadedFileSize,
-        videoFormat: 'VLC / MP4 Video',
-        createdAt: serverTimestamp()
-      });
-
-      setUploadProgress(100);
-      setTitle('');
-      setDescription('');
-      handleRemoveFile();
-      setToastMessage('MP4 / VLC video uploaded and published successfully!');
-    } catch (err: any) {
-      console.error('Video upload failed:', err);
-      setToastMessage('Failed to upload video file. Please check server status and try again.');
-    } finally {
-      setUploading(false);
-      setUploadProgress(0);
-    }
-  };
-
-  const executeDeleteVideo = async (targetVideo?: any) => {
-    const vid = targetVideo || videoToDelete;
-    if (!vid?.id) return;
-    const { id, title: vidTitle, videoUrl } = vid;
-
-    // 1. Immediately vanish from UI so it is gone from the library right away
-    setDeletedIds(prev => Array.from(new Set([...prev, id])));
-    setVideoToDelete(null);
-    if (previewModalVideo?.id === id) {
-      setPreviewModalVideo(null);
-    }
-
-    // 2. Delete from Firestore database
-    try {
-      await deleteDoc(doc(db, 'videos', id));
-    } catch (err: any) {
-      console.error('Firestore delete error:', err);
-      handleFirestoreError(err, OperationType.DELETE, `videos/${id}`);
-    }
-
-    // 3. Delete physical file from server storage
-    try {
-      const urlToDelete = videoUrl || rawVideos.find((v: any) => v.id === id)?.videoUrl;
-      if (urlToDelete) {
-        await axios.post('/api/delete-video', { videoUrl: urlToDelete });
-      }
-    } catch (err) {
-      console.error('File cleanup error:', err);
-    }
-
-    setToastMessage(`Video "${vidTitle || 'Lesson'}" was successfully deleted and vanished from the library.`);
-  };
-
-  const handleDelete = (id: string, vidTitle?: string, vidUrl?: string) => {
-    const target = rawVideos.find((v: any) => v.id === id) || { id, title: vidTitle, videoUrl: vidUrl };
-    setVideoToDelete(target);
-  };
-
-  const formatFileSize = (bytes?: number) => {
-    if (!bytes) return '';
-    const mb = bytes / (1024 * 1024);
-    if (mb >= 1) return `${mb.toFixed(1)} MB`;
-    return `${(bytes / 1024).toFixed(0)} KB`;
-  };
-
-  return (
-    <div className="space-y-8">
-      {/* Action Toast Banner */}
-      <AnimatePresence>
-        {toastMessage && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-2xl flex items-center justify-between text-xs font-bold shadow-sm"
-          >
-            <div className="flex items-center space-x-2">
-              <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>{toastMessage}</span>
-            </div>
-            <button onClick={() => setToastMessage(null)} className="text-emerald-600 hover:text-emerald-900">
-              <XCircle className="w-4 h-4" />
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <motion.div 
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm"
-      >
-        <div className="flex items-center space-x-3 mb-6">
-          <div className="w-12 h-12 rounded-2xl bg-orange-50 border border-orange-200 flex items-center justify-center text-orange-600">
-            <Film className="w-6 h-6" />
-          </div>
-          <div>
-            <h3 className="text-xl font-bold text-gray-900">Upload Training Video (MP4 / VLC)</h3>
-            <p className="text-xs text-gray-500">
-              Upload local MP4 or VLC default video files directly from your computer without any links or URLs.
-            </p>
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Target Course</label>
-              <select 
-                value={courseId}
-                onChange={(e) => setCourseId(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50"
-              >
-                {coursesList.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Lesson / Video Title</label>
-              <input 
-                required
-                type="text" 
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-                placeholder="e.g. Lesson 1: Introduction & Fundamentals"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea 
-              required
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none h-24"
-              placeholder="What practical skills will students learn in this video tutorial?"
-            />
-          </div>
-
-          {/* DIRECT MP4 / VLC VIDEO FILE UPLOAD (NO LINK / URL INPUT) */}
-          <div>
-            <label className="block text-sm font-bold text-gray-800 mb-1.5 flex items-center justify-between">
-              <span>Select MP4 Video File (VLC Default Video)</span>
-              <span className="text-xs font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-200">
-                Direct File Upload • No Link Required
-              </span>
-            </label>
-
-            <input 
-              ref={fileInputRef}
-              type="file" 
-              accept="video/mp4,video/x-m4v,video/*,.mp4,.mkv,.avi,.mov,.webm" 
-              onChange={handleFileChange}
-              className="hidden" 
-              id="training-video-file-input"
-            />
-
-            {!videoFile ? (
-              <label 
-                htmlFor="training-video-file-input"
-                className="border-2 border-dashed border-gray-300 hover:border-blue-500 hover:bg-blue-50/40 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all group"
-              >
-                <div className="w-16 h-16 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-600 mb-3 group-hover:scale-110 transition-transform">
-                  <FileVideo className="w-8 h-8" />
-                </div>
-                <p className="font-bold text-gray-800 text-sm mb-1">Click to select MP4 / VLC video from your computer</p>
-                <p className="text-xs text-gray-500 mb-3">Accepts standard VLC formats (.mp4, .mkv, .mov, .avi, .webm) up to 1GB</p>
-                <span className="px-4 py-2 bg-blue-600 group-hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-colors inline-flex items-center space-x-1.5 shadow-sm">
-                  <Upload className="w-3.5 h-3.5" />
-                  <span>Browse Video Files</span>
-                </span>
-              </label>
-            ) : (
-              <div className="border border-gray-200 rounded-2xl p-4 bg-gray-50/70">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center shrink-0">
-                      <Film className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-gray-900 truncate max-w-sm">{videoFile.name}</p>
-                      <p className="text-xs text-gray-500 flex items-center space-x-2">
-                        <span className="font-semibold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded border border-orange-200 text-[10px]">
-                          VLC / MP4 Video
-                        </span>
-                        <span>{formatFileSize(videoFile.size)}</span>
-                      </p>
-                    </div>
-                  </div>
-                  <button 
-                    type="button" 
-                    onClick={handleRemoveFile}
-                    className="text-xs text-red-600 hover:text-red-700 font-semibold px-3 py-1.5 bg-red-50 hover:bg-red-100 rounded-xl border border-red-200 transition-colors"
-                  >
-                    Change Video
-                  </button>
-                </div>
-
-                {previewUrl && (
-                  <div className="rounded-xl overflow-hidden bg-black border border-gray-200">
-                    <div className="px-3 py-1.5 bg-gray-900 text-white text-xs font-semibold flex items-center justify-between">
-                      <span className="flex items-center space-x-1.5">
-                        <PlayCircle className="w-3.5 h-3.5 text-blue-400" />
-                        <span>VLC / MP4 Player Preview</span>
-                      </span>
-                      <span className="text-[10px] text-gray-400">Ready to publish</span>
-                    </div>
-                    <video 
-                      src={previewUrl} 
-                      controls 
-                      className="w-full max-h-64 object-contain bg-black"
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* UPLOAD PROGRESS BAR */}
-          {uploading && (
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl space-y-2">
-              <div className="flex justify-between items-center text-xs font-bold text-blue-900">
-                <span className="flex items-center space-x-1.5">
-                  <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                  <span>Uploading MP4 video to training portal...</span>
-                </span>
-                <span>{uploadProgress}%</span>
-              </div>
-              <div className="w-full h-2.5 bg-blue-200 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-blue-600 transition-all duration-300 rounded-full" 
-                  style={{ width: `${uploadProgress}%` }}
-                />
-              </div>
-              <p className="text-[11px] text-blue-700 font-medium">
-                Please wait while your VLC / MP4 video file is securely saved to the training video library.
-              </p>
-            </div>
-          )}
-
-          <button 
-            type="submit" 
-            disabled={uploading || !videoFile}
-            className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition-all disabled:opacity-50 flex items-center justify-center space-x-2 cursor-pointer shadow-md shadow-blue-500/20"
-          >
-            <Upload className="w-5 h-5" />
-            <span>{uploading ? `Uploading MP4 Video (${uploadProgress}%)...` : 'Upload & Publish Video'}</span>
-          </button>
-        </form>
-      </motion.div>
-
-      {/* VIDEOS LIBRARY */}
-      <motion.div 
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden"
-      >
-        <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-          <h3 className="text-xl font-bold text-gray-900">Videos Library</h3>
-          <span className="text-xs font-bold text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-            {videos?.length || 0} Videos Published
-          </span>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="bg-gray-50 text-gray-500 text-xs uppercase font-bold tracking-wider">
-              <tr>
-                <th className="px-6 py-4">Video Info</th>
-                <th className="px-6 py-4">Course</th>
-                <th className="px-6 py-4">File Details</th>
-                <th className="px-6 py-4">Date</th>
-                <th className="px-6 py-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {videos && videos.length > 0 ? (
-                videos.map((vid: any, idx: number) => (
-                  <tr key={`video-row-${vid.id || idx}-${idx}`} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="font-bold text-gray-900">{vid.title}</div>
-                      <div className="text-xs text-gray-500 line-clamp-1">{vid.description}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold uppercase">
-                        {coursesList.find(c => c.id === vid.courseId)?.title || vid.courseId}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-1.5">
-                        <span className="px-2 py-0.5 bg-orange-50 text-orange-700 border border-orange-200 rounded font-semibold text-[11px] inline-flex items-center">
-                          <Film className="w-3 h-3 mr-1 text-orange-500" />
-                          VLC / MP4
-                        </span>
-                        {vid.fileSize && (
-                          <span className="text-xs text-gray-400">({formatFileSize(vid.fileSize)})</span>
-                        )}
-                      </div>
-                      {vid.fileName && (
-                        <p className="text-[10px] text-gray-400 truncate max-w-xs mt-0.5">{vid.fileName}</p>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
-                      {vid.createdAt?.toDate ? vid.createdAt.toDate().toLocaleDateString('en-GB') : 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end space-x-2">
-                        <button 
-                          onClick={() => setPreviewModalVideo(vid)}
-                          className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl text-xs font-bold transition-all inline-flex items-center space-x-1 cursor-pointer"
-                          title="Watch / Test Video"
-                        >
-                          <PlayCircle className="w-3.5 h-3.5" />
-                          <span>Play</span>
-                        </button>
-                        <button 
-                          onClick={() => handleDelete(vid.id, vid.title, vid.videoUrl)}
-                          className="flex items-center space-x-1 px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white border border-red-200/80 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-95"
-                          title="Delete this uploaded video"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          <span>Delete</span>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr key="empty-videos-row">
-                  <td colSpan={5} className="px-6 py-12 text-center text-gray-400 italic">
-                    <Film className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-                    No videos uploaded yet. Select an MP4 video above to publish.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </motion.div>
-
-      {/* CONFIRM DELETE MODAL: INSTANT VANISH & PERMANENT DELETE */}
-      <AnimatePresence>
-        {videoToDelete && (
-          <div className="fixed inset-0 z-[130] flex items-center justify-center p-4">
-            <div 
-              className="absolute inset-0 bg-black/80 backdrop-blur-sm" 
-              onClick={() => setVideoToDelete(null)} 
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="relative bg-white rounded-3xl overflow-hidden shadow-2xl max-w-md w-full z-10 p-6 border border-gray-100"
-            >
-              <div className="w-12 h-12 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-center text-red-600 mb-4 mx-auto">
-                <Trash2 className="w-6 h-6" />
-              </div>
-              <h4 className="text-lg font-bold text-gray-900 text-center mb-1">
-                Delete Video from Library?
-              </h4>
-              <p className="text-xs text-gray-500 text-center mb-5 leading-relaxed">
-                Are you sure you want to delete <strong className="text-gray-900">"{videoToDelete.title}"</strong>?<br/>
-                It will immediately vanish and be permanently removed from the video library and server.
-              </p>
-              <div className="flex items-center space-x-3">
-                <button
-                  type="button"
-                  onClick={() => setVideoToDelete(null)}
-                  className="flex-1 py-3 px-4 rounded-xl border border-gray-200 text-gray-700 font-bold text-xs hover:bg-gray-50 transition-colors cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={() => executeDeleteVideo(videoToDelete)}
-                  className="flex-1 py-3 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-md shadow-red-500/20 transition-all flex items-center justify-center space-x-1.5 cursor-pointer active:scale-95"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span>Delete & Vanish</span>
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* ADMIN VIDEO PREVIEW MODAL */}
-      <AnimatePresence>
-        {previewModalVideo && (
-          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
-            <div 
-              className="absolute inset-0 bg-black/80 backdrop-blur-sm" 
-              onClick={() => setPreviewModalVideo(null)} 
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="relative bg-white rounded-3xl overflow-hidden shadow-2xl max-w-3xl w-full z-10"
-            >
-              <div className="p-4 bg-gray-900 text-white flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Film className="w-5 h-5 text-orange-400" />
-                  <h4 className="font-bold text-sm truncate max-w-md">{previewModalVideo.title}</h4>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => handleDelete(previewModalVideo.id, previewModalVideo.title, previewModalVideo.videoUrl)}
-                    className="flex items-center space-x-1 px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
-                    title="Delete this video"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Delete Video</span>
-                  </button>
-                  <button 
-                    onClick={() => setPreviewModalVideo(null)}
-                    className="p-1 rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
-                  >
-                    <XCircle className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-              <div className="bg-black flex items-center justify-center aspect-video">
-                <video 
-                  src={previewModalVideo.videoUrl} 
-                  controls 
-                  autoPlay 
-                  className="w-full h-full object-contain"
-                />
-              </div>
-              <div className="p-4 bg-gray-50 flex items-center justify-between text-xs text-gray-600">
-                <span>{previewModalVideo.description}</span>
-                <span className="font-bold text-orange-600 bg-orange-100 px-2 py-0.5 rounded">
-                  VLC / MP4 Player
-                </span>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-    </div>
   );
 }

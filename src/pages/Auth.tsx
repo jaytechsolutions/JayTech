@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth, db } from '../lib/firebase';
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
@@ -7,6 +7,8 @@ import {
   createUserWithEmailAndPassword, 
   updateProfile,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
   sendPasswordResetEmail
 } from 'firebase/auth';
@@ -30,6 +32,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import SuccessOverlay from '../components/SuccessOverlay';
+import logoImg from '../assets/images/kobbi_labs_official_logo_1790936488138.jpg';
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -50,45 +53,95 @@ export default function Auth() {
 
   const navigate = useNavigate();
 
-  const [videosSnap] = useCollection(query(collection(db, 'videos'), limit(3)));
-  const videos = useMemo(() => videosSnap?.docs.map(d => ({ id: d.id, ...d.data() })) || [], [videosSnap]);
+  // Handle Google Redirect Result on Mount
+  useEffect(() => {
+    getRedirectResult(auth)
+      .then(async (result) => {
+        if (result && result.user) {
+          const user = result.user;
+          const userRef = doc(db, 'users', user.uid);
+          const userSnap = await getDoc(userRef);
+          if (!userSnap.exists()) {
+            const userEmailLower = user.email?.toLowerCase();
+            const isAdmin = userEmailLower === 'kobbilabs@gmail.com' || userEmailLower === 'kobbijaysoftware@gmail.com';
+            await setDoc(userRef, {
+              name: user.displayName || user.email?.split('@')[0] || 'User',
+              email: user.email,
+              role: isAdmin ? 'admin' : 'user',
+              createdAt: serverTimestamp(),
+            });
+          }
+          setShowSuccess(true);
+          setTimeout(() => navigate('/dashboard'), 1500);
+        }
+      })
+      .catch((err) => {
+        console.warn('Redirect sign-in notice:', err);
+      });
+  }, [navigate]);
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
     setError('');
     const provider = new GoogleAuthProvider();
+    provider.addScope('profile');
+    provider.addScope('email');
+    provider.setCustomParameters({ prompt: 'select_account' });
+
     try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      
-      const userRef = doc(db, 'users', user.uid);
-      let userSnap;
+      let user;
       try {
-        userSnap = await getDoc(userRef);
-      } catch (err) {
-        handleFirestoreError(err, OperationType.GET, `users/${user.uid}`);
-        return;
-      }
-      
-      if (!userSnap.exists()) {
-        const userEmailLower = user.email?.toLowerCase();
-        const isAdmin = userEmailLower === 'jaytechsolutions.net@gmail.com' || userEmailLower === 'kobbijaysoftware@gmail.com';
-        try {
-          await setDoc(userRef, {
-            name: user.displayName,
-            email: user.email,
-            role: isAdmin ? 'admin' : 'user',
-            createdAt: serverTimestamp(),
-          });
-        } catch (err) {
-          handleFirestoreError(err, OperationType.WRITE, `users/${user.uid}`);
+        const result = await signInWithPopup(auth, provider);
+        user = result.user;
+      } catch (popupErr: any) {
+        if (
+          popupErr.code === 'auth/popup-blocked' ||
+          popupErr.code === 'auth/cancelled-popup-request' ||
+          popupErr.code === 'auth/operation-not-supported-in-this-environment'
+        ) {
+          // Fallback to full-page redirect for browsers/iframes blocking popups
+          await signInWithRedirect(auth, provider);
           return;
         }
+        throw popupErr;
       }
-      setShowSuccess(true);
-      setTimeout(() => navigate('/dashboard'), 2000);
+
+      if (user) {
+        const userRef = doc(db, 'users', user.uid);
+        let userSnap;
+        try {
+          userSnap = await getDoc(userRef);
+        } catch (err) {
+          handleFirestoreError(err, OperationType.GET, `users/${user.uid}`);
+          return;
+        }
+
+        if (!userSnap.exists()) {
+          const userEmailLower = user.email?.toLowerCase();
+          const isAdmin = userEmailLower === 'jaytechsolutions.net@gmail.com' || userEmailLower === 'kobbijaysoftware@gmail.com';
+          try {
+            await setDoc(userRef, {
+              name: user.displayName || user.email?.split('@')[0] || 'User',
+              email: user.email,
+              role: isAdmin ? 'admin' : 'user',
+              createdAt: serverTimestamp(),
+            });
+          } catch (err) {
+            handleFirestoreError(err, OperationType.WRITE, `users/${user.uid}`);
+            return;
+          }
+        }
+        setShowSuccess(true);
+        setTimeout(() => navigate('/dashboard'), 1500);
+      }
     } catch (err: any) {
-      setError(err.message || 'An error occurred during Google Sign-In.');
+      if (err.code === 'auth/popup-closed-by-user') {
+        setError('Sign in was canceled. You closed the Google sign-in window.');
+      } else if (err.code === 'auth/unauthorized-domain') {
+        setError('Google Sign-In notice: This domain must be authorized in Firebase Console (Authentication > Settings > Authorized domains).');
+      } else {
+        setError(err.message || 'An error occurred during Google Sign-In.');
+      }
     } finally {
       setLoading(false);
     }
@@ -108,7 +161,7 @@ export default function Auth() {
         
         // Determine role: if email matches either admin email, grant admin
         const emailLower = email.trim().toLowerCase();
-        const isAdmin = emailLower === 'jaytechsolutions.net@gmail.com' || emailLower === 'kobbijaysoftware@gmail.com';
+        const isAdmin = emailLower === 'kobbilabs@gmail.com' || emailLower === 'kobbijaysoftware@gmail.com';
         
         await setDoc(doc(db, 'users', user.uid), {
           name: name.trim(),
@@ -162,37 +215,19 @@ export default function Auth() {
         >
           <div>
             <h2 className="text-4xl font-black text-gray-900 mb-4">Master New Skills with Our Courses</h2>
-            <p className="text-xl text-gray-600">Get access to premium practical video modules and resources after joining our community.</p>
+            <p className="text-xl text-gray-600">Register for our live interactive online classes and master high-demand tech skills today.</p>
           </div>
 
           <div className="space-y-6">
             <h3 className="text-sm font-bold text-blue-600 uppercase tracking-widest flex items-center">
-              <PlayCircle className="w-4 h-4 mr-2" />
-              Latest Course Sessions
+              <CheckCircle2 className="w-4 h-4 mr-2" />
+              Professional Learning Track
             </h3>
             <div className="grid gap-6">
-              {videos?.map((vid: any, idx: number) => (
-                <motion.div 
-                  key={vid.id || `auth-vid-${idx}`} 
-                  whileHover={{ scale: 1.02 }}
-                  className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex items-center space-x-6 group cursor-pointer"
-                >
-                  <div className="relative w-24 h-16 bg-blue-50 rounded-2xl flex items-center justify-center flex-shrink-0 group-hover:bg-blue-600 transition-colors overflow-hidden">
-                    <PlayCircle className="w-8 h-8 text-blue-600 group-hover:text-white transition-colors relative z-10" />
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-gray-900 text-base mb-1">{vid.title}</h4>
-                    <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">{vid.description}</p>
-                  </div>
-                </motion.div>
-              ))}
-              {(!videos || videos.length === 0) && (
-                <div className="bg-gradient-to-br from-blue-50 to-teal-50 p-8 rounded-[2.5rem] border border-blue-100 text-blue-700 text-sm leading-relaxed shadow-inner">
-                  <div className="font-bold text-base mb-2">Premium Practical Learning</div>
-                  Generative AI, Data Analysis, Microsoft Office Suite, and Web Development courses are available with full certification. Sign in to browse your curriculum.
-                </div>
-              )}
+              <div className="bg-gradient-to-br from-blue-50 to-teal-50 p-8 rounded-[2.5rem] border border-blue-100 text-blue-700 text-sm leading-relaxed shadow-inner">
+                <div className="font-bold text-base mb-2">Interactive Online Classes</div>
+                Master Generative AI, Power BI Data Analysis, and the Microsoft Office Suite through our live online sessions. All students receive verified certificates and direct instructor access via WhatsApp.
+              </div>
             </div>
           </div>
 
@@ -312,11 +347,25 @@ export default function Auth() {
           ) : (
             /* Sign In / Sign Up View */
             <div>
-              <div className="bg-blue-600 p-8 text-center text-white">
-                <h2 className="text-3xl font-bold">{isLogin ? 'Welcome Back' : 'Join JayTech Solutions'}</h2>
-                <p className="mt-2 text-blue-100 text-sm">
-                  {isLogin ? 'Sign in to access your course and project dashboard' : 'Create an account to get started'}
-                </p>
+              <div className="bg-slate-950 p-8 text-center text-white relative overflow-hidden">
+                {/* Decorative background glow matching logo */}
+                <div className="absolute -bottom-12 -left-12 w-40 h-40 bg-blue-600/20 blur-3xl rounded-full" />
+                <div className="absolute -top-12 -right-12 w-40 h-40 bg-fuchsia-600/20 blur-3xl rounded-full" />
+                
+                <div className="relative z-10">
+                  <div className="w-16 h-16 rounded-2xl overflow-hidden mx-auto mb-4 shadow-2xl border border-white/10 ring-4 ring-white/5">
+                    <img 
+                      src={logoImg} 
+                      alt="Kobbi Labs Logo" 
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+                  <h2 className="text-3xl font-black tracking-tight">{isLogin ? 'Welcome Back' : 'Join Kobbi Labs'}</h2>
+                  <p className="mt-2 text-slate-400 text-sm font-medium">
+                    {isLogin ? 'Sign in to your professional tech portal' : 'Create an account to start your journey'}
+                  </p>
+                </div>
               </div>
 
               <div className="p-8">
@@ -489,7 +538,7 @@ export default function Auth() {
         show={showSuccess} 
         onClose={() => setShowSuccess(false)} 
         title={isLogin ? "Welcome Back!" : "Account Created!"}
-        message={isLogin ? "Redirecting to your dashboard..." : "Welcome to the JayTech Solutions community."}
+        message={isLogin ? "Redirecting to your dashboard..." : "Welcome to the Kobbi Labs community."}
       />
     </div>
   );

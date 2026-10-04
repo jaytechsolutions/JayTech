@@ -4,38 +4,23 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import dotenv from 'dotenv';
-import multer from 'multer';
 import nodemailer from 'nodemailer';
 import { GoogleGenAI } from "@google/genai";
+import admin from 'firebase-admin';
+import { getApps, initializeApp } from 'firebase-admin/app';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 
 dotenv.config({ override: true });
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-// Ensure video upload directory exists in public/uploads/videos
-const uploadsDir = path.resolve(__dirname, 'public', 'uploads');
-const videosDir = path.resolve(uploadsDir, 'videos');
-if (!fs.existsSync(videosDir)) {
-  fs.mkdirSync(videosDir, { recursive: true });
+// Initialize Firebase Admin
+if (!getApps().length) {
+  initializeApp({
+    projectId: "gen-lang-client-0188284566",
+  });
 }
+const dbAdmin = getFirestore("ai-studio-remixjaytechsolu-7537b57a-a6c9-4102-b343-b42bb623dc90");
 
-// Multer configuration for direct video file uploads
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    cb(null, videosDir);
-  },
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname) || '.mp4';
-    const cleanBase = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9_-]/g, '_');
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e6);
-    cb(null, `${cleanBase}_${uniqueSuffix}${ext}`);
-  }
-});
-
-const upload = multer({
-  storage,
-  limits: { fileSize: 1024 * 1024 * 1024 } // Up to 1GB video upload
-});
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const geminiApiKey = process.env.GEMINI_API_KEY || "";
 const ai = geminiApiKey ? new GoogleGenAI({
@@ -55,41 +40,6 @@ async function startServer() {
   });
 
   app.use(express.json());
-
-  // Static directory for serving uploaded MP4 / VLC video files with range support
-  app.use('/uploads', express.static(uploadsDir));
-
-  // Direct MP4 / VLC Video File Upload Endpoint
-  app.post('/api/upload-video', upload.single('video'), (req, res) => {
-    if (!req.file) {
-      return res.status(400).json({ error: "No video file provided" });
-    }
-    const relativeUrl = `/uploads/videos/${req.file.filename}`;
-    res.json({
-      url: relativeUrl,
-      fileName: req.file.originalname,
-      fileSize: req.file.size,
-      mimetype: req.file.mimetype || 'video/mp4'
-    });
-  });
-
-  // Direct Video File Cleanup Endpoint
-  app.post('/api/delete-video', (req, res) => {
-    try {
-      const { videoUrl } = req.body;
-      if (videoUrl && typeof videoUrl === 'string' && videoUrl.startsWith('/uploads/videos/')) {
-        const filename = path.basename(videoUrl);
-        const fullPath = path.resolve(videosDir, filename);
-        if (fs.existsSync(fullPath)) {
-          fs.unlinkSync(fullPath);
-        }
-      }
-      res.json({ success: true });
-    } catch (e: any) {
-      console.error('Error deleting video file:', e);
-      res.status(500).json({ error: e.message });
-    }
-  });
 
   // Paystack Payment Integration Endpoints
   const rawPk = process.env.VITE_PAYSTACK_PUBLIC_KEY || process.env.PAYSTACK_PUBLIC_KEY || '';
@@ -152,10 +102,10 @@ async function startServer() {
   });
 
   // Automatic Course Enrollment Email Endpoint
-  // Dispatches official confirmation email from jaytechsolutions.net@gmail.com to students after payment
+  // Dispatches official confirmation email from kobbilabs@gmail.com to students after payment
   app.post('/api/send-enrollment-email', async (req, res) => {
     try {
-      const { studentEmail, studentName, courses, courseTitle, totalAmount, amount, paymentReference, phone } = req.body;
+      const { studentEmail, studentName, courses, courseTitle, totalAmount, amount, paymentReference, phone, enrollmentCode } = req.body;
       
       if (!studentEmail) {
         return res.status(400).json({ error: "Student email is required." });
@@ -167,8 +117,9 @@ async function startServer() {
       const displayAmount = totalAmount || amount || 0;
       const displayName = studentName || 'Student';
       const ref = paymentReference || `REF-${Date.now()}`;
+      const code = enrollmentCode || `KL-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
-      const emailSubject = `🎉 Course Enrollment Confirmed: ${displayCourses} - JayTech Solutions`;
+      const emailSubject = `🎉 Online Class Enrollment Confirmed: ${displayCourses} - Kobbi Labs`;
       const emailHtml = `
         <!DOCTYPE html>
         <html>
@@ -188,6 +139,8 @@ async function startServer() {
             .detail-row:last-child { border-bottom: none; }
             .detail-label { color: #64748b; font-weight: 600; }
             .detail-value { color: #0f172a; font-weight: 800; text-align: right; }
+            .code-box { background: #f1f5f9; border: 2px dashed #cbd5e1; border-radius: 12px; padding: 15px; text-align: center; margin: 20px 0; }
+            .code-text { font-size: 24px; font-weight: 900; color: #2563eb; letter-spacing: 2px; }
             .instructions { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; margin-bottom: 24px; font-size: 13px; line-height: 1.6; color: #334155; }
             .instructions h4 { margin: 0 0 10px 0; color: #0f172a; font-size: 14px; font-weight: 800; }
             .footer { background: #f1f5f9; padding: 24px 30px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; }
@@ -197,15 +150,20 @@ async function startServer() {
         <body>
           <div class="container">
             <div class="header">
-              <div class="badge">Official Course Enrollment</div>
-              <h1 class="title">JayTech Solutions</h1>
-              <p style="margin: 6px 0 0 0; font-size: 13px; color: #94a3b8;">Software and Digital Solutions • Koforidua, Ghana</p>
+              <div class="badge">Official Class Enrollment</div>
+              <h1 class="title">Kobbi Labs</h1>
+              <p style="margin: 6px 0 0 0; font-size: 13px; color: #94a3b8;">Expert Software & Tech Training • Koforidua, Ghana</p>
             </div>
             <div class="content">
               <div class="greeting">Hello ${displayName},</div>
               <p class="paragraph">
-                Thank you for enrolling with JayTech Solutions! We have confirmed your payment for <strong>${displayCourses}</strong>. Your course access is now officially active with self-paced video modules, practical exercises, and official certification.
+                Thank you for enrolling with Kobbi Labs! We have confirmed your payment for <strong>${displayCourses}</strong>. You are now registered for our upcoming online classes.
               </p>
+
+              <div class="code-box">
+                <p style="margin: 0 0 8px 0; font-size: 12px; font-weight: bold; color: #64748b; text-transform: uppercase;">Your Unique Course Code</p>
+                <div class="code-text">${code}</div>
+              </div>
               
               <div class="details-card">
                 <div class="detail-row">
@@ -229,34 +187,30 @@ async function startServer() {
                   <span class="detail-label">Phone / WhatsApp:</span>
                   <span class="detail-value">${phone}</span>
                 </div>` : ''}
-                <div class="detail-row">
-                  <span class="detail-label">Learning Mode:</span>
-                  <span class="detail-value">Self-Paced Flexible Access</span>
-                </div>
               </div>
 
               <div class="instructions">
-                <h4>Next Steps:</h4>
-                <p style="margin: 6px 0;">1. <strong>Dashboard Access:</strong> Log into your JayTech Solutions account anytime to watch course videos and download project files.</p>
-                <p style="margin: 6px 0;">2. <strong>Class WhatsApp Group:</strong> Reach instructor Joseph Amponsah on WhatsApp at <strong>0245862205</strong> for one-on-one assistance and group study sessions.</p>
-                <p style="margin: 6px 0;">3. <strong>Verified Certificate:</strong> Complete your course lessons to generate and download your official authenticated Certificate of Completion.</p>
+                <h4>Next Steps to Join Class:</h4>
+                <p style="margin: 6px 0;">1. <strong>Join WhatsApp Group:</strong> Our administrator will reach out to you on WhatsApp at <strong>${phone || 'your registered number'}</strong> with the official group link.</p>
+                <p style="margin: 6px 0;">2. <strong>Verification:</strong> Please have your <strong>Course Code (${code})</strong> ready for verification when you join the group.</p>
+                <p style="margin: 6px 0;">3. <strong>Schedule:</strong> Class schedules and links (Google Meet/Zoom) will be shared directly in the WhatsApp group.</p>
               </div>
 
               <p class="paragraph" style="font-size: 13px; color: #64748b; margin-top: 10px;">
-                Have questions? Reply directly to this email at <strong>jaytechsolutions.net@gmail.com</strong> or call <strong>0204168810</strong>.
+                Have questions? Reply directly to this email at <strong>kobbilabs@gmail.com</strong> or call <strong>0204168810</strong>.
               </p>
             </div>
             <div class="footer">
-              <p><strong>JayTech Solutions</strong> • Software and Digital Solutions</p>
-              <p>From: <a href="mailto:jaytechsolutions.net@gmail.com" style="color: #0d9488; text-decoration: none;">jaytechsolutions.net@gmail.com</a> | WhatsApp: +233 24 586 2205</p>
-              <p style="margin-top: 8px; font-size: 11px; color: #94a3b8;">© ${new Date().getFullYear()} JayTech Solutions. All rights reserved.</p>
+              <p><strong>Kobbi Labs</strong> • Software and Digital Solutions</p>
+              <p>From: <a href="mailto:kobbilabs@gmail.com" style="color: #0d9488; text-decoration: none;">kobbilabs@gmail.com</a> | WhatsApp: +233 24 586 2205</p>
+              <p style="margin-top: 8px; font-size: 11px; color: #94a3b8;">© ${new Date().getFullYear()} Kobbi Labs. All rights reserved.</p>
             </div>
           </div>
         </body>
         </html>
       `;
 
-      const smtpUser = process.env.SMTP_USER || process.env.GMAIL_USER || 'jaytechsolutions.net@gmail.com';
+      const smtpUser = process.env.SMTP_USER || process.env.GMAIL_USER || 'kobbilabs@gmail.com';
       const smtpPass = process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || process.env.EMAIL_PASSWORD || '';
 
       if (smtpPass) {
@@ -269,9 +223,9 @@ async function startServer() {
             }
           });
           const info = await transporter.sendMail({
-            from: '"JayTech Solutions" <jaytechsolutions.net@gmail.com>',
+            from: '"Kobbi Labs" <kobbilabs@gmail.com>',
             to: studentEmail,
-            replyTo: 'jaytechsolutions.net@gmail.com',
+            replyTo: 'kobbilabs@gmail.com',
             subject: emailSubject,
             html: emailHtml,
           });
@@ -280,17 +234,18 @@ async function startServer() {
           console.warn('[EMAIL DISPATCH SMTP NOTICE]', smtpErr);
         }
       } else {
-        console.log(`[EMAIL DISPATCH AUTOMATED] From: jaytechsolutions.net@gmail.com -> To: ${studentEmail}`);
+        console.log(`[EMAIL DISPATCH AUTOMATED] From: kobbilabs@gmail.com -> To: ${studentEmail}`);
         console.log(`Subject: ${emailSubject}`);
       }
 
       res.json({
         success: true,
-        from: 'jaytechsolutions.net@gmail.com',
+        from: 'kobbilabs@gmail.com',
         to: studentEmail,
         course: displayCourses,
         reference: ref,
-        message: `Automatic enrollment email from jaytechsolutions.net@gmail.com dispatched to ${studentEmail}.`
+        enrollmentCode: code,
+        message: `Automatic enrollment email from kobbilabs@gmail.com dispatched to ${studentEmail}.`
       });
     } catch (err: any) {
       console.error('Error sending enrollment email:', err);
@@ -338,7 +293,34 @@ async function startServer() {
       const sanitizedCategory = escapeHtml(cleanCategory);
       const sanitizedMessage = escapeHtml(cleanMessage).replace(/\n/g, '<br/>');
 
-      const supportEmail = 'jaytechsolutions.net@gmail.com';
+      // 0. Save to Firestore
+      try {
+        const inquiryDoc = await dbAdmin.collection('inquiries').add({
+          name: cleanName,
+          email: cleanEmail,
+          phone: cleanPhone || 'Not provided',
+          subject: cleanSubject,
+          category: cleanCategory,
+          message: cleanMessage,
+          status: 'new',
+          createdAt: FieldValue.serverTimestamp()
+        });
+        console.log(`[CONTACT INQUIRY] Saved to Firestore from ${cleanEmail}`);
+
+        // Add real-time notification for admin
+        await dbAdmin.collection('notifications').add({
+          title: `New Inquiry: ${cleanSubject}`,
+          message: `Client ${cleanName} (${cleanPhone || cleanEmail}) submitted a new inquiry regarding ${cleanCategory}.`,
+          inquiryId: inquiryDoc.id,
+          type: 'admin_new_inquiry',
+          read: false,
+          createdAt: FieldValue.serverTimestamp()
+        });
+      } catch (dbErr) {
+        console.warn('[CONTACT INQUIRY DB NOTICE] Failed to save to Firestore or notify:', dbErr);
+      }
+
+      const supportEmail = 'kobbilabs@gmail.com';
       const smtpUser = process.env.SMTP_USER || process.env.GMAIL_USER || supportEmail;
       const smtpPass = process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || process.env.EMAIL_PASSWORD || '';
 
@@ -363,7 +345,7 @@ async function startServer() {
           <div class="card">
             <div class="header">
               <h2 style="margin: 0; font-size: 20px;">New Client Inquiry Received</h2>
-              <p style="margin: 4px 0 0 0; opacity: 0.9; font-size: 13px;">JayTech Solutions Customer Care & Support</p>
+              <p style="margin: 4px 0 0 0; opacity: 0.9; font-size: 13px;">Kobbi Labs Customer Care & Support</p>
             </div>
             <div class="content">
               <div class="field-row">
@@ -393,7 +375,7 @@ async function startServer() {
             </div>
             <div class="footer">
               <p style="margin: 0;">Hit "Reply" in your email client to directly respond to ${sanitizedName} (${sanitizedEmail}).</p>
-              <p style="margin: 4px 0 0 0;">JayTech Solutions • Koforidua, Ghana • 0204168810 / 0245862205</p>
+              <p style="margin: 4px 0 0 0;">Kobbi Labs • Koforidua, Ghana • 0204168810 / 0245862205</p>
             </div>
           </div>
         </body>
@@ -417,12 +399,12 @@ async function startServer() {
           <div class="card">
             <div class="header">
               <h2 style="margin: 0; font-size: 22px;">Inquiry Received!</h2>
-              <p style="margin: 4px 0 0 0; opacity: 0.9; font-size: 14px;">Thank you for contacting JayTech Solutions</p>
+              <p style="margin: 4px 0 0 0; opacity: 0.9; font-size: 14px;">Thank you for contacting Kobbi Labs</p>
             </div>
             <div class="content">
               <p>Hello <strong>${sanitizedName}</strong>,</p>
               <p>We have successfully received your inquiry regarding <strong>"${sanitizedSubject}"</strong> (${sanitizedCategory}).</p>
-              <p>Our team, led by Joseph Amponsah, reviews all client inquiries and aims to respond within a few hours or the same business day.</p>
+              <p>Our team at Kobbi Labs reviews all client inquiries and aims to respond within a few hours or the same business day.</p>
               <div style="background-color: #f1f5f9; padding: 16px; border-radius: 12px; margin: 20px 0; font-size: 14px;">
                 <strong>Summary of your message:</strong><br/>
                 <span style="color: #475569;">${sanitizedMessage}</span>
@@ -434,7 +416,7 @@ async function startServer() {
               </ul>
             </div>
             <div class="footer">
-              <p style="margin: 0;"><strong>JayTech Solutions</strong> • Koforidua, Ghana</p>
+              <p style="margin: 0;"><strong>Kobbi Labs</strong> • Koforidua, Ghana</p>
               <p style="margin: 4px 0 0 0;">Empowering Businesses with Software Solutions & Professional IT Training</p>
             </div>
           </div>
@@ -452,35 +434,26 @@ async function startServer() {
             }
           });
 
-          // 1. Send notice to JayTech support team
-          await transporter.sendMail({
-            from: `"JayTech Contact Desk" <${supportEmail}>`,
-            to: supportEmail,
-            replyTo: cleanEmail,
-            subject: `[New Inquiry] ${cleanCategory}: ${cleanSubject} - ${cleanName}`,
-            html: adminEmailHtml,
-          });
-
           // 2. Send automated confirmation back to the client
           await transporter.sendMail({
-            from: `"JayTech Solutions Support" <${supportEmail}>`,
+            from: `"Kobbi Labs Support" <${supportEmail}>`,
             to: cleanEmail,
             replyTo: supportEmail,
-            subject: `We have received your inquiry - JayTech Solutions`,
+            subject: `We have received your inquiry - Kobbi Labs`,
             html: clientConfirmationHtml,
           });
 
-          console.log(`[CONTACT INQUIRY SMTP] Successfully routed inquiry from ${cleanEmail} to ${supportEmail}`);
+          console.log(`[CONTACT INQUIRY SMTP] Successfully saved to Firestore and sent confirmation to ${cleanEmail}`);
         } catch (smtpErr) {
           console.warn('[CONTACT INQUIRY SMTP NOTICE] Transporter notice:', smtpErr);
         }
       } else {
-        console.log(`[CONTACT INQUIRY LOG] From: ${cleanName} <${cleanEmail}> | Subject: ${cleanSubject} | Category: ${cleanCategory}`);
+        console.log(`[CONTACT INQUIRY LOG] From: ${cleanName} <${cleanEmail}> | Saved to Firestore`);
       }
 
       res.json({
         success: true,
-        message: 'Thank you! Your message has been sent directly to the JayTech Solutions support team. We will get back to you shortly.',
+        message: 'Thank you! Your message has been sent directly to the Kobbi Labs support team. We will get back to you shortly.',
       });
     } catch (err: any) {
       console.error('Contact inquiry error:', err);
@@ -488,93 +461,192 @@ async function startServer() {
     }
   });
 
-  // Intelligent JayTech knowledge response generator for quota fallback / offline mode
+  // Intelligent Kobbi Labs comprehensive knowledge response generator for quota fallback / offline mode
   function getSmartFallbackReply(userPrompt: string): string {
-    const p = userPrompt.toLowerCase();
-    if (p.includes('course') || p.includes('train') || p.includes('learn') || p.includes('class') || p.includes('study') || p.includes('excel') || p.includes('power bi') || p.includes('word') || p.includes('powerpoint') || p.includes('basic')) {
-      return "JayTech Solutions offers practical, self-paced IT training with official certification:\n\n• Generative AI (GHS 400) - Prompt engineering, AI agents & building with LLMs\n• Data Analysis (GHS 400) - Statistical analysis, data cleaning, visualization & Power BI\n• Microsoft Excel (GHS 350) - Formulas, Pivot Tables, Power Query & VBA automation\n• Microsoft PowerPoint (GHS 250) - Professional slide design & infographics\n• Basic Computing (GHS 250) - OS navigation, file management & digital safety\n• Microsoft Word (GHS 200) - Professional documentation, mail merge & templates\n\nAll courses are on-demand, self-paced, and include downloadable project files and verified certificates upon completion. You can enroll on our Training page!";
+    const p = userPrompt.toLowerCase().trim();
+
+    // Specific training / courses queries
+    if (p.includes('power bi') || p.includes('data analysis') || p.includes('powerbi')) {
+      return "📊 **Data Analysis with Power BI (GHS 400)**\n\nOur Data Analysis course equips you with high-demand analytics skills:\n• Microsoft Power BI dashboard development & data modeling\n• DAX formulas, measures, and calculated columns\n• Excel data cleansing and ETL with Power Query\n• Real-world business case studies & interactive reports\n• Official verified Certificate of Completion with QR code\n\nAccess is 100% self-paced and on-demand with downloadable exercise files. You can enroll directly on our Training page using Mobile Money (MTN MoMo, Telecel, AT) or Bank Cards via Paystack!";
     }
-    if (p.includes('service') || p.includes('web') || p.includes('mobile') || p.includes('app') || p.includes('develop') || p.includes('database') || p.includes('software')) {
-      return "JayTech Solutions delivers top-tier technology & software solutions:\n\n• Custom Website Development - Fast, mobile-responsive & SEO-ready\n• Web Applications - High-scale platforms with secure user auth & databases\n• Mobile Apps - Native-feel iOS & Android applications\n• Database Management - Robust data architecture, backups & security\n• Data Analytics - Custom analytics dashboards & business intelligence\n• Social Media Management - Growth strategy, scheduling & digital presence\n\nYou can request an order or consultation directly from our Services page!";
+
+    if (p.includes('gen ai') || p.includes('generative ai') || p.includes('prompt') || p.includes('llm') || p.includes('chatgpt')) {
+      return "🤖 **Generative AI & Prompt Engineering (GHS 400)**\n\nMaster the cutting edge of artificial intelligence:\n• Advanced prompt engineering techniques for business productivity\n• Building AI agents, automated workflows, and LLM integrations\n• Ethical AI deployment and image/text generation tools\n• Interactive online classes + verified certificate of completion\n\nEnroll now on the Training tab to start learning immediately!";
     }
-    if (p.includes('pay') || p.includes('momo') || p.includes('price') || p.includes('cost') || p.includes('fee') || p.includes('cedi') || p.includes('ghs') || p.includes('card')) {
-      return "All payments are processed securely in Ghanaian Cedis (GHS) via Paystack. You can pay with Mobile Money (MTN MoMo, Telecel Cash, AT Money) or Bank Cards (Visa and Mastercard). Your enrollment is activated immediately after payment, and an official confirmation receipt is dispatched to your email!";
+
+    if (p.includes('excel') || p.includes('spreadsheet') || p.includes('vba') || p.includes('pivot')) {
+      return "📈 **Microsoft Excel Advanced Masterclass (GHS 350)**\n\nFrom everyday formulas to advanced enterprise workflows:\n• VLOOKUP, XLOOKUP, INDEX/MATCH, and nested logic\n• Pivot Tables, Pivot Charts, and dynamic data dashboards\n• Automation with Power Query and foundational VBA macros\n• Includes hands-on project workbooks and verified certification.";
     }
-    if (p.includes('contact') || p.includes('phone') || p.includes('whatsapp') || p.includes('call') || p.includes('email') || p.includes('location') || p.includes('address') || p.includes('admin') || p.includes('joseph')) {
-      return "You can get in touch with JayTech Solutions anytime:\n\n• WhatsApp Instructor Joseph Amponsah: +233 24 586 2205\n• Direct Phone Call: 0204168810\n• Official Email: jaytechsolutions.net@gmail.com\n• Location: Koforidua, Eastern Region, Ghana\n\nWe are always available to discuss software projects, client quotes, or training assistance!";
+
+    if (p.includes('powerpoint') || p.includes('slide') || p.includes('presentation')) {
+      return "🎨 **Microsoft PowerPoint Presentation Design (GHS 250)**\n\nCraft pitch decks and professional corporate presentations:\n• Executive typography, color theory, and visual hierarchy\n• Master slide layouts, custom vector shapes, and smart infographics\n• Smooth transitions, subtle motion animation, and export presets.";
     }
-    if (p.includes('cert') || p.includes('certificate')) {
-      return "Yes! Upon completing your course lessons, you can generate and download your official authenticated JayTech Solutions Certificate of Completion, complete with a unique verification code and QR code for employer verification.";
+
+    if (p.includes('word') || p.includes('document') || p.includes('typing')) {
+      return "📝 **Microsoft Word Professional (GHS 200)**\n\nMaster document production:\n• Advanced formatting, styles, and automated tables of contents\n• Mail merge, form creation, and corporate documentation templates\n• Citation styles, proofing, and digital document distribution.";
     }
-    return "Hello! JayTech Solutions is Ghana's leading software development and practical tech training provider. We build high-performance web and mobile systems, manage databases, and teach on-demand courses (Generative AI, Data Analysis with Power BI, Excel, Word, PowerPoint, Basic Computing). How can we assist you today? You can also message Joseph Amponsah directly on WhatsApp at 0245862205 or call 0204168810.";
+
+    if (p.includes('basic') || p.includes('beginner') || p.includes('computer') || p.includes('literacy')) {
+      return "💻 **Basic Computing & Digital Literacy (GHS 250)**\n\nIdeal for beginners:\n• Operating system fundamentals (Windows/Mac), file organization & navigation\n• Internet security, cloud storage, safe email & cyber awareness\n• Practical daily digital productivity tools.";
+    }
+
+    if (p.includes('course') || p.includes('train') || p.includes('learn') || p.includes('class') || p.includes('study') || p.includes('curriculum')) {
+      return "🎓 **Kobbi Labs Training Programs**\n\nAll courses are self-paced, on-demand, and include official certificates:\n\n1. Generative AI & Prompt Engineering - GHS 400\n2. Data Analysis with Power BI - GHS 400\n3. Microsoft Excel Advanced - GHS 350\n4. Microsoft PowerPoint Design - GHS 250\n5. Basic Computing & Digital Literacy - GHS 250\n6. Microsoft Word Professional - GHS 200\n\n💳 Pay securely with MTN MoMo, Telecel Cash, or Bank Cards via Paystack on the Course tab for instant access!";
+    }
+
+    // Services queries
+    if (p.includes('website') || p.includes('web dev') || p.includes('web design') || p.includes('landing page')) {
+      return "🌐 **Website Development by Kobbi Labs**\n\nWe build lightning-fast, responsive, and SEO-optimized websites tailored to your brand:\n• Business landing pages & modern corporate portals\n• Mobile-first responsiveness and high conversion UI/UX\n• Integrated contact forms, analytics, and content management\n\nDelivery typically within 1 to 2 weeks. Request an order or quote from our Services page!";
+    }
+
+    if (p.includes('mobile') || p.includes('app') || p.includes('android') || p.includes('ios') || p.includes('flutter')) {
+      return "📱 **Mobile App Development by Kobbi Labs**\n\nWe engineer modern cross-platform iOS & Android mobile applications:\n• Sleek UI, smooth gestures, and responsive native-feel performance\n• Cloud backend integration, push notifications, and offline persistence\n• Secure user authentication and payment gateway integration\n\nReach out through our Services page or WhatsApp (+233 24 586 2205) for a project roadmap!";
+    }
+
+    if (p.includes('database') || p.includes('sql') || p.includes('postgres') || p.includes('backend') || p.includes('api')) {
+      return "🗄️ **Enterprise Database Architecture & Cloud Backend**\n\nWe design, optimize, and secure database infrastructures:\n• PostgreSQL, MySQL, Firebase Firestore, and Cloud SQL\n• Schema normalization, index tuning, and high availability\n• Automated backups, migration scripts, and role-based security rules.";
+    }
+
+    if (p.includes('service') || p.includes('software') || p.includes('develop') || p.includes('tech solution')) {
+      return "🚀 **Kobbi Labs Technology & Software Services**\n\nWe offer end-to-end digital solutions for startups and enterprises:\n• Website Development (Responsive, SEO-ready, modern)\n• Web Applications (Cloud systems, secure multi-user portals)\n• Mobile Applications (Cross-platform iOS & Android)\n• Enterprise Database Architecture (High availability & security)\n• Data Analytics & BI Dashboards (Power BI & custom reporting)\n• Social Media Strategy & Digital Management\n\nYou can order any service directly from our Services page or message our team on WhatsApp at +233 24 586 2205!";
+    }
+
+    // Payments / MoMo
+    if (p.includes('pay') || p.includes('momo') || p.includes('price') || p.includes('cost') || p.includes('fee') || p.includes('cedi') || p.includes('ghs') || p.includes('card') || p.includes('money') || p.includes('telecel') || p.includes('mtn')) {
+      return "💳 **Secure Payment Information**\n\nAll payments are processed securely in Ghanaian Cedis (GHS) through Paystack:\n• Mobile Money: MTN MoMo, Telecel Cash, and AT Money\n• Bank Cards: Visa and Mastercard\n\nCourse activations are instant upon successful payment. An official receipt is dispatched directly to your email!";
+    }
+
+    // Certificates
+    if (p.includes('cert') || p.includes('certificate') || p.includes('diploma') || p.includes('degree') || p.includes('recognize') || p.includes('accredit')) {
+      return "🏆 **Official Verified Certification**\n\nYes! Every course graduate receives an official Kobbi Labs Certificate of Completion:\n• Encrypted unique Verification ID\n• Verifiable QR code for employers, clients, or academic institutions\n• High-resolution, print-ready PDF download directly from your Student Dashboard upon completing lesson modules.";
+    }
+
+    // Schedule / Timetable / Duration
+    if (p.includes('schedule') || p.includes('time') || p.includes('hour') || p.includes('duration') || p.includes('when') || p.includes('start') || p.includes('deadline')) {
+      return "⏰ **Schedule & Flexibility**\n\nAll Kobbi Labs courses are **100% self-paced and on-demand**!\n• There are no rigid lecture timetables or strict deadlines\n• Learn whenever your schedule allows (day or night)\n• Replay tutorials as often as needed with lifetime access to materials\n• Direct WhatsApp instructor support is available whenever you encounter roadblocks.";
+    }
+
+    // Contact / Location / WhatsApp
+    if (p.includes('contact') || p.includes('phone') || p.includes('whatsapp') || p.includes('call') || p.includes('email') || p.includes('location') || p.includes('address') || p.includes('where') || p.includes('office')) {
+      return "📍 **Kobbi Labs Contact & Hub Details**\n\n• WhatsApp Support Desk: +233 24 586 2205\n• Direct Phone Call: 0204168810\n• Official Email: kobbilabs@gmail.com\n• Physical Location: Koforidua, Eastern Region, Ghana\n• Remote Operations: Serving clients and students across Ghana and internationally\n\nFeel free to call, WhatsApp, or submit an inquiry through our Contact page!";
+    }
+
+    // General programming / coding advice
+    if (p.includes('python') || p.includes('javascript') || p.includes('react') || p.includes('code') || p.includes('program') || p.includes('developer') || p.includes('software engineer')) {
+      return "💡 **Software Engineering at Kobbi Labs**\n\nAt Kobbi Labs, we build using industry-standard modern stacks:\n• Frontend: React, TypeScript, Tailwind CSS, Vite, Next.js\n• Backend & Cloud: Node.js, Express, Firebase, Google Cloud, PostgreSQL\n• Mobile: React Native, Flutter\n• Data Science & AI: Python, Power BI, LLMs, and prompt engineering\n\nWhether you are looking to learn tech skills or build software for your organization, Kobbi Labs has the expertise to guide you!";
+    }
+
+    // Greetings
+    if (p.includes('hi') || p.includes('hello') || p.includes('hey') || p.includes('good morning') || p.includes('good afternoon') || p.includes('good evening') || p === '') {
+      return "👋 Hello! Welcome to **Kobbi Labs**. I am your AI assistant.\n\nI can help you with:\n1. 📚 Course syllabus, fees & instant enrollment (Power BI, Generative AI, Excel, etc.)\n2. 💻 Software development & custom quote requests (Websites, Mobile Apps, Databases)\n3. 💳 Mobile Money & card payments via Paystack\n4. 🏆 Official verified certificates\n5. 📞 Connecting with our support and engineering team\n\nWhat would you like to know today?";
+    }
+
+    // Default universal answer
+    return `Hello! At **Kobbi Labs**, we empower individuals and businesses with cutting-edge software engineering (Websites, Mobile Apps, Enterprise Databases) and practical, self-paced IT training (Power BI, Generative AI, Microsoft Excel, PowerPoint, Basic Computing).\n\nRegarding your question: "${userPrompt.slice(0, 80)}${userPrompt.length > 80 ? '...' : ''}", our team is ready to assist you! You can chat directly with our engineering and support desk on WhatsApp at **+233 24 586 2205** or call **0204168810**. How else may I help you?`;
   }
 
-  // AI Chat Endpoint with multi-model cascade and quota protection
+  // AI Chat Endpoint with multi-model cascade, dynamic key resolution, and zero-failure fallback
   app.post('/api/chat', async (req, res) => {
-    const { prompt, history } = req.body;
-    const cleanPrompt = String(prompt || '').trim();
+    let cleanPrompt = '';
+    try {
+      const { prompt, history } = req.body || {};
+      cleanPrompt = String(prompt || '').trim();
 
-    if (!cleanPrompt) {
-      return res.json({ response: getSmartFallbackReply("") });
-    }
-
-    if (!process.env.GEMINI_API_KEY || !ai) {
-      return res.json({ response: getSmartFallbackReply(cleanPrompt) });
-    }
-
-    const contents = [
-      ...(Array.isArray(history) ? history : []).map((h: any) => ({
-        role: (h.role === 'user' ? 'user' : 'model') as 'user' | 'model',
-        parts: [{ text: typeof h.content === 'string' ? h.content : (h.parts?.[0]?.text || '') }]
-      })),
-      {
-        role: 'user' as const,
-        parts: [{ text: cleanPrompt }]
+      if (!cleanPrompt) {
+        return res.json({ response: getSmartFallbackReply("") });
       }
-    ];
 
-    // Priority model cascade:
-    // 1. gemini-3.1-flash-lite: High throughput, separate quota, lowest token usage
-    // 2. gemini-flash-latest: Stable standard flash
-    // 3. gemini-3.8-flash: Flagship flash model
-    const candidateModels = [
-      "gemini-3.1-flash-lite",
-      "gemini-flash-latest",
-      "gemini-3.8-flash"
-    ];
+      const currentApiKey = process.env.GEMINI_API_KEY || geminiApiKey;
 
-    let generatedText = "";
+      // If an API key is available, attempt real-time Gemini generation
+      if (currentApiKey) {
+        try {
+          const client = new GoogleGenAI({
+            apiKey: currentApiKey,
+            httpOptions: {
+              headers: {
+                'User-Agent': 'aistudio-build',
+              }
+            }
+          });
 
-    for (const model of candidateModels) {
-      try {
-        const response = await ai.models.generateContent({
-          model,
-          contents,
-          config: {
-            systemInstruction: "You are the official AI assistant for JayTech Solutions. You help users with questions about our software development services (web, mobile, data), and our tech training programs (Generative AI, Data Analysis with Power BI, Excel, Word, PowerPoint, Basic Computing). All courses are self-paced, flexible, and on-demand without fixed time-frames. Current currency for all training is Ghanaian Cedis (GHS). For course payments, we use Paystack, allowing secure online payments via Mobile Money (MTN MoMo, Telecel Cash, AT Money) and Bank Cards (Visa, Mastercard). Be professional, helpful, and concise. If they need direct human assistance, suggest they contact JayTech Solutions support (Joseph Amponsah at 0204168810 or WhatsApp 0245862205).",
-            maxOutputTokens: 800,
+          const contents = [
+            ...(Array.isArray(history) ? history : []).map((h: any) => ({
+              role: (h.role === 'user' ? 'user' : 'model') as 'user' | 'model',
+              parts: [{ text: typeof h.content === 'string' ? h.content : (h.parts?.[0]?.text || '') }]
+            })),
+            {
+              role: 'user' as const,
+              parts: [{ text: cleanPrompt }]
+            }
+          ];
+
+          // Valid active model cascade prioritizing high-availability models:
+          const candidateModels = [
+            "gemini-flash-latest",
+            "gemini-3.1-flash-lite",
+            "gemini-3.8-flash"
+          ];
+
+          let generatedText = "";
+
+          const systemInstruction = 
+            "You are the official, knowledgeable, and courteous AI assistant for Kobbi Labs. " +
+            "Kobbi Labs is an elite software development firm and practical tech training academy based in Koforidua, Ghana, serving clients locally and globally. " +
+            "Our software services include Website Development, Cloud Web Applications, Mobile App Development (iOS & Android), Enterprise Database Architecture, Data Analytics, and Social Media Strategy. " +
+            "Our online tech training courses (all in Ghanaian Cedis GHS) include: " +
+            "• Data Analysis with Power BI (GHS 400)\n" +
+            "• Generative AI & Prompt Engineering (GHS 400)\n" +
+            "• Microsoft Excel Advanced (GHS 350)\n" +
+            "• Microsoft PowerPoint Design (GHS 250)\n" +
+            "• Basic Computing & Digital Literacy (GHS 250)\n" +
+            "• Microsoft Word Professional (GHS 200).\n" +
+            "All courses include official verified certificates of completion with QR codes. " +
+            "After payment, students receive a unique Course Code and join a WhatsApp group for live online classes and instructor guidance. " +
+            "All payments are handled securely via Paystack in Ghanaian Cedis (GHS) supporting Mobile Money (MTN MoMo, Telecel Cash, AT Money) and Bank Cards (Visa and Mastercard). " +
+            "Direct support is available via WhatsApp (+233 24 586 2205) or phone call (0204168810). " +
+            "Respond helpfully and accurately to EVERY question the user asks—whether about Kobbi Labs services, courses, or general programming, computer science, technology, or business advice. Keep responses well-formatted with markdown and clear paragraphs.";
+
+          const createTimeoutPromise = (ms: number) =>
+            new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Model execution timeout')), ms));
+
+          for (const model of candidateModels) {
+            try {
+              const result = await client.models.generateContent({
+                model,
+                contents,
+                config: {
+                  systemInstruction,
+                }
+              });
+
+              const text = result.text;
+
+              if (text && text.trim().length > 0) {
+                generatedText = text.trim();
+                break;
+              }
+            } catch (modelError: any) {
+              console.warn(`[GEMINI STATUS] Model "${model}" failed/timed out:`, modelError?.message || modelError);
+            }
           }
-        });
 
-        if (response.text && response.text.trim().length > 0) {
-          generatedText = response.text;
-          break;
+          if (generatedText) {
+            return res.json({ response: generatedText });
+          }
+        } catch (err: any) {
+          console.warn('[GEMINI CHAT NOTICE] Falling back to intelligent local engine:', err?.message || err);
         }
-      } catch (modelError: any) {
-        const isQuota = modelError?.status === 429 || 
-          modelError?.message?.includes('resource_exhausted') || 
-          modelError?.message?.includes('quota');
-        console.warn(`[GEMINI STATUS] Model "${model}" failed${isQuota ? ' (quota exceeded)' : ''}:`, modelError?.message || modelError);
-        // Continue loop to try next model in cascade
       }
-    }
 
-    // If all models exhausted or failed, seamlessly serve structured JayTech knowledge base
-    if (!generatedText) {
-      generatedText = getSmartFallbackReply(cleanPrompt);
+      // Zero-failure fallback: Always answer every user question intelligently
+      const fallbackText = getSmartFallbackReply(cleanPrompt);
+      return res.json({ response: fallbackText });
+    } catch (globalChatErr: any) {
+      console.error('[CHAT GLOBAL HANDLER NOTICE]', globalChatErr);
+      const safeText = getSmartFallbackReply(cleanPrompt || "hello");
+      return res.json({ response: safeText });
     }
-
-    res.json({ response: generatedText });
   });
 
   // Client Serving: Support both Vite Dev Middleware and Production Dist Builds

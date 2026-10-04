@@ -350,7 +350,7 @@ export default function CertificateModal({
                 <div className="inline-flex items-center space-x-2 text-[#1e3a8a] mb-1">
                   <div className="h-[1.5px] w-12 bg-gradient-to-r from-transparent to-[#d97706]" />
                   <span className="text-[14px] font-sans font-black tracking-[0.3em] uppercase text-amber-700">
-                    JAYTECH SOLUTIONS
+                    KOBBI LABS
                   </span>
                   <div className="h-[1.5px] w-12 bg-gradient-to-l from-transparent to-[#d97706]" />
                 </div>
@@ -451,18 +451,18 @@ export default function CertificateModal({
                         letterSpacing: '1px'
                       }}
                     >
-                      Joseph Amponsah
+                      Kobbi Labs
                     </span>
                   </div>
 
                   <p className="text-xs font-bold text-slate-900 mt-1 uppercase tracking-wide">
-                    Joseph Amponsah
+                    Kobbi Labs
                   </p>
                   <p className="text-[10px] text-amber-800 font-bold uppercase tracking-wider">
-                    Lead Instructor & Founder
+                    Lead Technical Director
                   </p>
                   <p className="text-[9px] text-slate-500">
-                    JayTech Solutions
+                    Kobbi Labs
                   </p>
                 </div>
               </div>
@@ -474,7 +474,7 @@ export default function CertificateModal({
             <div className="text-xs text-gray-500 flex items-center space-x-1.5">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>
-                Official certificate issued by JayTech Solutions • Instructor: <strong>Joseph Amponsah</strong>
+                Official certificate issued by Kobbi Labs
               </span>
             </div>
             

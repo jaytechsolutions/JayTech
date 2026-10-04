@@ -114,6 +114,38 @@
       },
       "required": ["userId", "title", "message"]
     },
+    "Inquiry": {
+      "title": "Inquiry",
+      "description": "Contact form inquiries from users",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "subject": { "type": "string" },
+        "category": { "type": "string" },
+        "message": { "type": "string" },
+        "status": { "type": "string", "enum": ["new", "read", "replied"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "email", "message", "status"]
+    },
+    "ErrorLog": {
+      "title": "ErrorLog",
+      "description": "Client-side runtime error logs",
+      "type": "object",
+      "properties": {
+        "message": { "type": "string" },
+        "stack": { "type": "string" },
+        "componentStack": { "type": "string" },
+        "userId": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "url": { "type": "string" },
+        "userAgent": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["message", "timestamp"]
+    },
     "TestConnection": {
       "title": "TestConnection",
       "description": "Connection test document for health checks",
@@ -121,6 +153,16 @@
       "properties": {
         "status": { "type": "string" }
       }
+    },
+    "NewsletterSubscriber": {
+      "title": "NewsletterSubscriber",
+      "description": "Email addresses for newsletter subscriptions",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "subscribedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "subscribedAt"]
     }
   },
   "firestore": {
@@ -155,6 +197,18 @@
     "progress/{progressId}": {
       "schema": "progress",
       "description": "Course progress tracking"
+    },
+    "inquiries/{inquiryId}": {
+      "schema": "Inquiry",
+      "description": "User contact inquiries"
+    },
+    "error_logs/{logId}": {
+      "schema": "ErrorLog",
+      "description": "Application error logs"
+    },
+    "newsletter_subscribers/{subscriberId}": {
+      "schema": "NewsletterSubscriber",
+      "description": "Newsletter email list"
     }
   }
 }

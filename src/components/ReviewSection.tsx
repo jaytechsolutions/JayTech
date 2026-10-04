@@ -57,7 +57,7 @@ export default function ReviewSection() {
   // Mock initial reviews as requested
   const mockReviews = [
     { id: 'm1', userName: 'Samuel Mensah', content: 'Excellent web development service. Highly recommended!', rating: 5 },
-    { id: 'm2', userName: 'Grace Adama', content: 'The AI training was eye-opening. Joseph Amponsah and the JayTech team are exceptional instructors.', rating: 5 },
+    { id: 'm2', userName: 'Grace Adama', content: 'The AI training was eye-opening. The Kobbi Labs team are exceptional instructors.', rating: 5 },
     { id: 'm3', userName: 'John Doe', content: 'Fixed our database issues in no time. Very professional.', rating: 4 },
   ];
 
